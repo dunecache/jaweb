@@ -1,9 +1,9 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { db } from "../db/client";
-import { users } from "../db/schema";
+import { classes, users } from "../db/schema";
 import type { AppEnv } from "../lib/app-types";
 import { ValidationError } from "../lib/errors";
 import { requireAuth } from "../middleware/auth";
@@ -25,6 +25,14 @@ leaderboardRoutes.get("/", async (c) => {
       .where(eq(users.id, c.var.user.id))
       .get();
     classId = student?.classId ?? "";
+  }
+  if (!classId && c.var.user.role === "teacher") {
+    const first = await db
+      .select({ id: classes.id })
+      .from(classes)
+      .where(isNull(classes.archivedAt))
+      .get();
+    classId = first?.id ?? "";
   }
   if (!classId) throw new ValidationError("No class for this board");
 
