@@ -157,7 +157,7 @@ describe("multilingual grading pipeline", () => {
   });
 
   it("retries malformed JSON up to twice, then needs review", async () => {
-    queueFakeResponses("not json", "still not json");
+    queueFakeResponses("not json", "still not json", "definitely not json");
     const id = await insertSubmission("a paraphrase");
     await gradeSubmissionById(id);
     const row = await db.select().from(submissions).where(eq(submissions.id, id)).get();
