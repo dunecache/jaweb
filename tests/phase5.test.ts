@@ -180,8 +180,9 @@ describe("monitor", () => {
       headers: { cookie: `${SESSION_COOKIE}=${teacherToken}` },
     });
     expect(response.status).toBe(200);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    expect([bytes[0], bytes[1], bytes[2]]).toEqual([0xef, 0xbb, 0xbf]);
     const text = await response.text();
-    expect(text.charCodeAt(0)).toBe(0xfeff);
     expect(text).toContain("Username");
     expect(text).toContain("alice");
   });
