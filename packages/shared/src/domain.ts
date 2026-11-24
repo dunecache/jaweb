@@ -159,6 +159,67 @@ export const submissionDtoSchema = z.object({
 });
 export type SubmissionDto = z.infer<typeof submissionDtoSchema>;
 
+export const leaderboardEntrySchema = z.object({
+  rank: z.number().int(),
+  studentId: z.string().min(1),
+  username: z.string().min(1),
+  displayName: z.string().min(1),
+  points: z.number().int(),
+  gradedCount: z.number().int(),
+  pendingCount: z.number().int(),
+  lastSubmissionAt: z.string().nullable(),
+  isSelf: z.boolean(),
+});
+export type LeaderboardEntry = z.infer<typeof leaderboardEntrySchema>;
+
+export const leaderboardSchema = z.object({
+  scope: z.enum(["live", "all", "exercise"]),
+  activityOnly: z.boolean(),
+  visibility: leaderboardVisibilitySchema,
+  entries: z.array(leaderboardEntrySchema),
+  rev: z.string(),
+});
+export type Leaderboard = z.infer<typeof leaderboardSchema>;
+
+export const historySummarySchema = z.object({
+  exerciseId: z.string().min(1),
+  title: z.string().min(1),
+  status: exerciseStatusSchema,
+  closedAt: z.string().nullable(),
+  myPoints: z.number().int(),
+  questionCount: z.number().int(),
+  submittedCount: z.number().int(),
+});
+export type HistorySummary = z.infer<typeof historySummarySchema>;
+
+export const historyListSchema = z.object({
+  exercises: z.array(historySummarySchema),
+  rev: z.string(),
+});
+export type HistoryList = z.infer<typeof historyListSchema>;
+
+export const historyDetailSchema = z.object({
+  exerciseId: z.string().min(1),
+  title: z.string().min(1),
+  status: exerciseStatusSchema,
+  questions: z.array(
+    z.object({
+      id: z.string().min(1),
+      position: z.number().int(),
+      prompt: z.string(),
+      kind: questionKindSchema,
+      options: z.array(optionSchema).nullable(),
+      points: z.number().int(),
+      revealed: z.boolean(),
+      correctOptionIds: z.array(z.string()).nullable(),
+      modelAnswer: z.string().nullable(),
+    }),
+  ),
+  submissions: z.array(submissionDtoSchema),
+  rev: z.string(),
+});
+export type HistoryDetail = z.infer<typeof historyDetailSchema>;
+
 export const monitorCellSchema = z.enum([
   "not_opened",
   "opened",

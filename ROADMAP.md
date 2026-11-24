@@ -216,13 +216,13 @@ The roadmap is shaped so multiple agents can work at once without coordinating i
 
 **Swarm:** A leaderboard service+API ∥ C student history in parallel; B boards UI after A's contract.
 
-- [ ] Scoring service finalized (weights + window read from the exercise row)
-- [ ] Leaderboard service: live-exercise board + all-time board, scoped per class (teacher can view any class); ties by earlier last-submission time
-- [ ] Visibility modes (full / top-10 + self / hidden; default top-10 + self for students, full for teacher)
-- [ ] `at_close` exercises: while live, the board shows activity counts only; verdicts, scores, and points land at close
-- [ ] Student history list + detail: own answers, verdicts, scores; correct answers and feedback only for closed exercises; missed items shown
-- [ ] Reveal-on-close: feedback + correct answers unlock; board finalizes for that exercise
-- [ ] Leaderboard polling 15–30s adaptive, pause on hidden; "grading" provisional indicator on pending rows
+- [x] Scoring service finalized (weights + window read from the exercise row)
+- [x] Leaderboard service: live-exercise board + all-time board, scoped per class (teacher can view any class); ties by earlier last-submission time
+- [x] Visibility modes (full / top-10 + self / hidden; default top-10 + self for students, full for teacher)
+- [x] `at_close` exercises: while live, the board shows activity counts only; verdicts, scores, and points land at close
+- [x] Student history list + detail: own answers, verdicts, scores; correct answers and feedback only for closed exercises; missed items shown
+- [x] Reveal-on-close: feedback + correct answers unlock; board finalizes for that exercise
+- [x] Leaderboard polling 15–30s adaptive, pause on hidden; "grading" provisional indicator on pending rows
 
 **Acceptance:**
 

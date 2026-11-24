@@ -110,6 +110,11 @@ export const providerSettings = sqliteTable("provider_settings", {
   baseUrl: text("base_url"),
   testedAt: text("tested_at"),
   testOk: integer("test_ok", { mode: "boolean" }),
+  leaderboardVisibility: text("leaderboard_visibility", {
+    enum: ["full", "top10_self", "hidden"],
+  })
+    .notNull()
+    .default("top10_self"),
   updatedAt: text("updated_at").notNull(),
 });
 

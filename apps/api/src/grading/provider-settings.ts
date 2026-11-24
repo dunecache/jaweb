@@ -61,6 +61,7 @@ export async function maskedSettings(): Promise<GradingSettings> {
     source: resolved.source,
     testedAt: row?.testedAt ?? null,
     testOk: row?.testOk ?? null,
+    leaderboardVisibility: row?.leaderboardVisibility ?? "top10_self",
   };
 }
 
@@ -85,6 +86,7 @@ export async function saveSettings(input: PatchGradingSettings): Promise<Grading
       baseUrl: input.baseUrl ?? null,
       testedAt: null,
       testOk: null,
+      leaderboardVisibility: input.leaderboardVisibility ?? "top10_self",
       updatedAt: new Date().toISOString(),
     })
     .onConflictDoUpdate({
@@ -97,6 +99,8 @@ export async function saveSettings(input: PatchGradingSettings): Promise<Grading
         baseUrl: input.baseUrl ?? null,
         testedAt: null,
         testOk: null,
+        leaderboardVisibility:
+          input.leaderboardVisibility ?? existing?.leaderboardVisibility ?? "top10_self",
         updatedAt: new Date().toISOString(),
       },
     });

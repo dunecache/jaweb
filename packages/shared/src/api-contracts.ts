@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   answerSchema,
   exerciseTypeSchema,
+  leaderboardVisibilitySchema,
   optionSchema,
   providerNameSchema,
   roleSchema,
@@ -111,6 +112,7 @@ export const overrideSubmissionRequestSchema = z.object({
 export type OverrideSubmissionRequest = z.infer<typeof overrideSubmissionRequestSchema>;
 
 export const gradingSettingsSchema = z.object({
+  leaderboardVisibility: leaderboardVisibilitySchema,
   provider: providerNameSchema,
   model: z.string().min(1),
   apiKeyLast4: z.string().nullable(),
@@ -122,6 +124,7 @@ export const gradingSettingsSchema = z.object({
 export type GradingSettings = z.infer<typeof gradingSettingsSchema>;
 
 export const patchGradingSettingsSchema = z.object({
+  leaderboardVisibility: leaderboardVisibilitySchema.optional(),
   provider: providerNameSchema,
   model: z.string().min(1),
   apiKey: z.string().min(1).optional(),

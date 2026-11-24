@@ -35,6 +35,9 @@ export function TeacherLayout() {
               <Link to="/teacher/settings" className="hover:text-ink">
                 Settings
               </Link>
+              <Link to="/leaderboard" className="hover:text-ink">
+                Leaderboard
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">

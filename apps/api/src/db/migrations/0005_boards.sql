@@ -1,0 +1,1 @@
+ALTER TABLE `provider_settings` ADD `leaderboard_visibility` text DEFAULT 'top10_self' NOT NULL;

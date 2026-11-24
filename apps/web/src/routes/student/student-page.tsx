@@ -1,6 +1,7 @@
 import type { StudentCurrent, StudentSafeQuestion } from "@jaweb/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
 import { ConfirmButton } from "@/components/app/confirm-dialog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/app/data-state";
@@ -159,6 +160,10 @@ export function StudentPage() {
 
   return (
     <div className="mx-auto max-w-[720px] space-y-6 px-4 py-10">
+      <nav className="flex gap-4 text-sm text-accent" aria-label="Student navigation">
+        <Link to="/student/history">History</Link>
+        <Link to="/leaderboard">Leaderboard</Link>
+      </nav>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl text-ink" dir="auto">

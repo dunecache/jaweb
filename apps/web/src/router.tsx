@@ -6,6 +6,7 @@ import { PlaceholderShell } from "@/components/app/placeholder-shell";
 import { useMe } from "@/lib/auth";
 import { LeaderboardPage } from "@/routes/leaderboard/leaderboard-page";
 import { LoginPage } from "@/routes/login/login-page";
+import { HistoryPage } from "@/routes/student/history-page";
 import { StudentPage } from "@/routes/student/student-page";
 import { ClassesPage } from "@/routes/teacher/classes-page";
 import { ExerciseEditorPage } from "@/routes/teacher/exercise-editor-page";
@@ -72,7 +73,10 @@ const router = createBrowserRouter([
         <Outlet />
       </RequireAuth>
     ),
-    children: [{ index: true, element: <StudentPage /> }],
+    children: [
+      { index: true, element: <StudentPage /> },
+      { path: "history", element: <HistoryPage /> },
+    ],
   },
   {
     path: "/leaderboard",
