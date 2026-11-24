@@ -90,6 +90,14 @@ beforeAll(async () => {
   otherClassId = newId();
   moduleId = newId();
   const hash = await hashPassword("pass-1234");
+  // Classes must exist before students reference them.
+  await db.insert(classes).values([
+    { id: classId, name: "2AS-1", position: 1, createdAt: nowIso() },
+    { id: otherClassId, name: "3AS-1", position: 2, createdAt: nowIso() },
+  ]);
+  await db
+    .insert(modules)
+    .values({ id: moduleId, title: "Module", position: 1, createdAt: nowIso() });
   await db.insert(users).values([
     {
       id: teacherId,
@@ -111,14 +119,6 @@ beforeAll(async () => {
   ]);
   teacherToken = await session(teacherId);
   studentToken = await session(studentId);
-
-  await db.insert(classes).values([
-    { id: classId, name: "2AS-1", position: 1, createdAt: nowIso() },
-    { id: otherClassId, name: "3AS-1", position: 2, createdAt: nowIso() },
-  ]);
-  await db
-    .insert(modules)
-    .values({ id: moduleId, title: "Module", position: 1, createdAt: nowIso() });
 
   exerciseId = newId();
   emptyExerciseId = newId();
