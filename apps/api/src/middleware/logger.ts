@@ -6,7 +6,8 @@ import { pino } from "pino";
 import type { AppEnv } from "../lib/app-types";
 
 const baseLogger = pino({
-  level: process.env.NODE_ENV === "test" ? "silent" : "info",
+  // Unexpected 500s must be visible in CI, so keep errors enabled in tests.
+  level: process.env.NODE_ENV === "test" ? "warn" : "info",
   redact: {
     paths: ["password", "apiKey", "*.password", "*.apiKey"],
     remove: true,
