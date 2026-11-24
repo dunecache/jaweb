@@ -28,6 +28,7 @@ let otherClassId = "";
 let moduleId = "";
 let exerciseId = "";
 let emptyExerciseId = "";
+let incompleteExerciseId = "";
 let otherClassExerciseId = "";
 let choiceQuestionId = "";
 let freeQuestionId = "";
@@ -122,10 +123,12 @@ beforeAll(async () => {
 
   exerciseId = newId();
   emptyExerciseId = newId();
+  incompleteExerciseId = newId();
   otherClassExerciseId = newId();
   await db.insert(exercises).values([
     { ...exerciseRow(exerciseId, "Live one", classId), createdBy: teacherId },
     { ...exerciseRow(emptyExerciseId, "Empty", classId), createdBy: teacherId },
+    { ...exerciseRow(incompleteExerciseId, "Incomplete", classId), createdBy: teacherId },
     { ...exerciseRow(otherClassExerciseId, "Other class", otherClassId), createdBy: teacherId },
   ]);
 
@@ -165,13 +168,31 @@ beforeAll(async () => {
       partialCredit: false,
       createdAt: nowIso(),
     },
+    {
+      id: newId(),
+      exerciseId: emptyExerciseId,
+      position: 1,
+      prompt: "Ready question",
+      kind: "single_choice",
+      options: [
+        { id: "a", text: "yes" },
+        { id: "b", text: "no" },
+      ],
+      correctOptionIds: ["a"],
+      modelAnswer: null,
+      keyPoints: null,
+      aliases: null,
+      points: 10,
+      partialCredit: false,
+      createdAt: nowIso(),
+    },
   ]);
 });
 
 describe("lifecycle", () => {
   it("refuses to go live without a complete answer key", async () => {
     const response = await request(
-      `/api/teacher/exercises/${emptyExerciseId}/live`,
+      `/api/teacher/exercises/${incompleteExerciseId}/live`,
       {
         method: "POST",
       },
