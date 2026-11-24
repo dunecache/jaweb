@@ -205,32 +205,34 @@ describe("auth", () => {
 });
 
 describe("role matrix", () => {
-  const cases: Array<{ method: string; path: string; body?: unknown; teacherStatus: number }> = [
-    { method: "GET", path: "/api/teacher/classes", teacherStatus: 200 },
-    { method: "POST", path: "/api/teacher/classes", body: { name: "3AS-2" }, teacherStatus: 201 },
-    {
-      method: "PATCH",
-      path: "class-id",
-      body: { name: "2AS-1 renamed" },
-      teacherStatus: 200,
-    },
-    { method: "GET", path: "/api/teacher/students", teacherStatus: 200 },
-    {
-      method: "POST",
-      path: "/api/teacher/students",
-      body: { username: "student3", displayName: "Three", password: "password-3", classId },
-      teacherStatus: 201,
-    },
-    {
-      method: "PATCH",
-      path: "student-id",
-      body: { displayName: "Renamed" },
-      teacherStatus: 200,
-    },
-  ];
+  function cases(): Array<{ method: string; path: string; body?: unknown; teacherStatus: number }> {
+    return [
+      { method: "GET", path: "/api/teacher/classes", teacherStatus: 200 },
+      { method: "POST", path: "/api/teacher/classes", body: { name: "3AS-2" }, teacherStatus: 201 },
+      {
+        method: "PATCH",
+        path: "class-id",
+        body: { name: "2AS-1 renamed" },
+        teacherStatus: 200,
+      },
+      { method: "GET", path: "/api/teacher/students", teacherStatus: 200 },
+      {
+        method: "POST",
+        path: "/api/teacher/students",
+        body: { username: "student3", displayName: "Three", password: "password-3", classId },
+        teacherStatus: 201,
+      },
+      {
+        method: "PATCH",
+        path: "student-id",
+        body: { displayName: "Renamed" },
+        teacherStatus: 200,
+      },
+    ];
+  }
 
   it("returns 401 anonymous, 403 for students, and the expected teacher code on every route", async () => {
-    for (const testCase of cases) {
+    for (const testCase of cases()) {
       const path = testCase.path === "class-id" ? `/api/teacher/classes/${classId}` : testCase.path;
       const resolvedPath =
         testCase.path === "student-id" ? `/api/teacher/students/${studentId}` : path;
