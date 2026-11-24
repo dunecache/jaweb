@@ -134,6 +134,35 @@ export function studentSafeQuestion(question: QuestionDto): StudentSafeQuestion 
   });
 }
 
+export const safeExerciseSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().nullable(),
+  type: exerciseTypeSchema,
+  status: exerciseStatusSchema,
+  verdictVisibility: verdictVisibilitySchema,
+  opensAt: z.string().nullable(),
+  closesAt: z.string().nullable(),
+  speedWindowSeconds: z.number().int(),
+});
+export type SafeExercise = z.infer<typeof safeExerciseSchema>;
+
+export const submissionDtoSchema = z.object({
+  questionId: z.string().min(1),
+  status: submissionStatusSchema,
+  submittedAt: z.string(),
+  score: z.number().min(0).max(1).nullable(),
+  verdict: verdictSchema.nullable(),
+  feedback: z.string().nullable(),
+  gradedBy: gradedBySchema.nullable(),
+  flagged: z.boolean(),
+});
+export type SubmissionDto = z.infer<typeof submissionDtoSchema>;
+
+export function deriveVerdict(score: number): Verdict {
+  return score >= 1 ? "correct" : score > 0 ? "partial" : "wrong";
+}
+
 export const gradeResultSchema = z.object({
   score: z.union([z.literal(0), z.literal(0.5), z.literal(1)]),
   verdict: verdictSchema,

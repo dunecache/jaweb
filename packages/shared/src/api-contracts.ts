@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { exerciseTypeSchema, optionSchema, roleSchema, verdictVisibilitySchema } from "./domain";
+import {
+  answerSchema,
+  exerciseTypeSchema,
+  optionSchema,
+  roleSchema,
+  safeExerciseSchema,
+  studentSafeQuestionSchema,
+  submissionDtoSchema,
+  verdictVisibilitySchema,
+} from "./domain";
 
 export const errorCodeSchema = z.enum([
   "VALIDATION_ERROR",
@@ -91,6 +100,22 @@ export const createStudentRequestSchema = z.object({
   classId: z.string().min(1).nullable().optional(),
 });
 export type CreateStudentRequest = z.infer<typeof createStudentRequestSchema>;
+
+export const createSubmissionRequestSchema = z.object({
+  questionId: z.string().min(1),
+  answer: answerSchema,
+});
+export type CreateSubmissionRequest = z.infer<typeof createSubmissionRequestSchema>;
+
+export const studentCurrentSchema = z.object({
+  exercise: safeExerciseSchema.nullable(),
+  questions: z.array(studentSafeQuestionSchema),
+  submissions: z.array(submissionDtoSchema),
+  serverTime: z.string(),
+  closesAt: z.string().nullable(),
+  rev: z.string(),
+});
+export type StudentCurrent = z.infer<typeof studentCurrentSchema>;
 
 export const createModuleRequestSchema = z.object({
   title: z.string().min(1).max(160),

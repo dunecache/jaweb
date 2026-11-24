@@ -142,11 +142,11 @@ The roadmap is shaped so multiple agents can work at once without coordinating i
 
 **Swarm:** D polling-client lib lands first (both UI lanes consume it); then A lifecycle+submissions API (owns schema) ∥ B student answering UI ∥ C teacher live console.
 
-- [ ] Go-live / close endpoints; lazy lifecycle — `opens_at`/`closes_at` evaluated against server time on every read and submit, stored status flipped lazily + best-effort sweep; single-live guard **per class** in a transaction (409)
-- [ ] `participations` upsert on student view — `started_at` written **once** on the first view (first-write-wins; it is the speed anchor, AGENTS §9.5), only `last_seen_at` updates afterwards; student "current" endpoint (student-safe fields, `serverTime`, `closesAt`, graceful `{exercise: null}`)
-- [ ] Answer UIs per kind (radio / checkbox / textarea) + one-shot confirm dialog ("You can only submit once")
-- [ ] `POST /submissions`: uniqueness (409 on resubmit), server timestamps, < 2s flag; deterministic inline grading for choice kinds
-- [ ] Submission status columns in place (`grading` reserved for Phase 4); localStorage draft resume; "nothing live" empty state
+- [x] Go-live / close endpoints; lazy lifecycle — `opens_at`/`closes_at` evaluated against server time on every read and submit, stored status flipped lazily + best-effort sweep; single-live guard **per class** in a transaction (409)
+- [x] `participations` upsert on student view — `started_at` written **once** on the first view (first-write-wins; it is the speed anchor, AGENTS §9.5), only `last_seen_at` updates afterwards; student "current" endpoint (student-safe fields, `serverTime`, `closesAt`, graceful `{exercise: null}`)
+- [x] Answer UIs per kind (radio / checkbox / textarea) + one-shot confirm dialog ("You can only submit once")
+- [x] `POST /submissions`: uniqueness (409 on resubmit), server timestamps, < 2s flag; deterministic inline grading for choice kinds
+- [x] Submission status columns in place (`grading` reserved for Phase 4); localStorage draft resume; "nothing live" empty state
 
 **Acceptance:**
 

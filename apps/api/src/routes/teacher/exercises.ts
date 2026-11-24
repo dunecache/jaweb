@@ -16,6 +16,7 @@ import {
   listExercises,
   patchExercise,
 } from "../../services/exercises";
+import { closeExercise, goLive } from "../../services/lifecycle";
 import { createQuestion, listQuestions, previewQuestions } from "../../services/questions";
 
 export const teacherExercisesRoutes = new Hono<AppEnv>();
@@ -52,6 +53,18 @@ teacherExercisesRoutes.get("/:id/questions", async (c) =>
 teacherExercisesRoutes.post("/:id/questions", async (c) => {
   const input = await parseJson(c, createQuestionRequestSchema);
   return c.json(await createQuestion(c.req.param("id"), input), 201);
+});
+
+teacherExercisesRoutes.post("/:id/live", async (c) => {
+  const id = c.req.param("id");
+  await goLive(id);
+  return c.json(await getExercise(id));
+});
+
+teacherExercisesRoutes.post("/:id/close", async (c) => {
+  const id = c.req.param("id");
+  await closeExercise(id);
+  return c.json(await getExercise(id));
 });
 
 teacherExercisesRoutes.get("/:id/preview", async (c) => {

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { useParams } from "react-router";
 
+import { ConfirmButton } from "@/components/app/confirm-dialog";
 import { ErrorState, LoadingState } from "@/components/app/data-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,12 @@ export function ExerciseEditorPage() {
     onSuccess: invalidate,
   });
 
+  const lifecycle = useMutation({
+    mutationFn: (action: "live" | "close") =>
+      apiRequest(`/teacher/exercises/${id}/${action}`, { method: "POST" }),
+    onSuccess: invalidate,
+  });
+
   const patchExercise = useMutation({
     mutationFn: (body: string) =>
       apiRequest(`/teacher/exercises/${id}`, { method: "PATCH", body }, exerciseSchema),
@@ -102,11 +109,36 @@ export function ExerciseEditorPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-semibold text-ink">{current.title}</h1>
-        <p className="mt-2 text-sm text-ink-muted">
-          {current.type} · {current.status} · verdicts {current.verdictVisibility}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-semibold text-ink">{current.title}</h1>
+          <p className="mt-2 text-sm text-ink-muted">
+            {current.type} · {current.status} · verdicts {current.verdictVisibility}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {current.status === "draft" || current.status === "scheduled" ? (
+            <ConfirmButton
+              variant="default"
+              label="Go live"
+              title="Start this exercise?"
+              description="Students in its class will see it immediately."
+              confirmLabel="Go live"
+              onConfirm={() => lifecycle.mutate("live")}
+            />
+          ) : null}
+          {current.status === "live" ? (
+            <ConfirmButton
+              variant="destructive"
+              label="Close"
+              title="Close this exercise?"
+              description="Answers are locked and results are revealed."
+              confirmLabel="Close"
+              destructive
+              onConfirm={() => lifecycle.mutate("close")}
+            />
+          ) : null}
+        </div>
       </div>
 
       <form onSubmit={onDetails} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

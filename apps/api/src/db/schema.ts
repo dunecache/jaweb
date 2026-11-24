@@ -1,3 +1,4 @@
+import type { Answer, GradedBy, SubmissionStatus, Verdict } from "@jaweb/shared";
 import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 // Classes scope liveness, rosters, monitors, and leaderboards (AGENTS §6).
@@ -94,6 +95,55 @@ export const exercises = sqliteTable(
   (table) => [
     index("exercises_module_idx").on(table.moduleId),
     index("exercises_class_status_idx").on(table.classId, table.status),
+  ],
+);
+
+export const participations = sqliteTable(
+  "participations",
+  {
+    id: text("id").primaryKey(),
+    exerciseId: text("exercise_id")
+      .notNull()
+      .references(() => exercises.id),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => users.id),
+    startedAt: text("started_at").notNull(),
+    lastSeenAt: text("last_seen_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("participations_exercise_student_idx").on(table.exerciseId, table.studentId),
+  ],
+);
+
+export const submissions = sqliteTable(
+  "submissions",
+  {
+    id: text("id").primaryKey(),
+    exerciseId: text("exercise_id")
+      .notNull()
+      .references(() => exercises.id),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => questions.id),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => users.id),
+    answer: text("answer", { mode: "json" }).$type<Answer>(),
+    submittedAt: text("submitted_at").notNull(),
+    status: text("status", { enum: ["grading", "graded", "needs_review"] })
+      .notNull()
+      .default("grading"),
+    score: real("score"),
+    verdict: text("verdict", { enum: ["correct", "partial", "wrong"] }).$type<Verdict>(),
+    feedback: text("feedback"),
+    gradedBy: text("graded_by", { enum: ["auto", "llm", "teacher"] }).$type<GradedBy>(),
+    gradedAt: text("graded_at"),
+    flagged: integer("flagged", { mode: "boolean" }).notNull().default(false),
+  },
+  (table) => [
+    uniqueIndex("submissions_question_student_idx").on(table.questionId, table.studentId),
+    index("submissions_exercise_idx").on(table.exerciseId),
   ],
 );
 

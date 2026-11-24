@@ -14,6 +14,9 @@ import { errorHandler } from "./middleware/error";
 import { loggerMiddleware } from "./middleware/logger";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
+import { studentCurrentRoutes } from "./routes/student/current";
+import { studentExercisesRoutes } from "./routes/student/exercises";
+import { studentSubmissionRoutes } from "./routes/student/submissions";
 import { teacherClassesRoutes } from "./routes/teacher/classes";
 import { teacherExercisesRoutes } from "./routes/teacher/exercises";
 import { teacherModulesRoutes } from "./routes/teacher/modules";
@@ -35,6 +38,9 @@ app.route("/api/teacher/students", teacherStudentsRoutes);
 app.route("/api/teacher/modules", teacherModulesRoutes);
 app.route("/api/teacher/exercises", teacherExercisesRoutes);
 app.route("/api/teacher/questions", teacherQuestionsRoutes);
+app.route("/api/student/current", studentCurrentRoutes);
+app.route("/api/student/exercises", studentExercisesRoutes);
+app.route("/api/student/submissions", studentSubmissionRoutes);
 app.all("/api/*", (c) => c.json(notFoundBody, 404));
 
 // Production serves the built SPA from the API origin; dev uses the Vite proxy.
