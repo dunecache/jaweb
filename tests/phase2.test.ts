@@ -136,6 +136,23 @@ describe("curriculum authoring", () => {
     // Empty strings are rejected by the zod contract on write.
     expect(created.status).toBe(422);
 
+    // Insert an incomplete key directly to exercise the go-live guard itself.
+    await db.insert(questions).values({
+      id: newId(),
+      exerciseId,
+      position: 1,
+      prompt: "Capital of Algeria?",
+      kind: "free_text",
+      options: null,
+      correctOptionIds: null,
+      modelAnswer: "",
+      keyPoints: [],
+      aliases: [],
+      points: 10,
+      partialCredit: false,
+      createdAt: nowIso(),
+    });
+
     const issues = await exerciseReadiness(exerciseId);
     expect(issues.map((issue) => issue.path[2])).toContain("modelAnswer");
     expect(issues.map((issue) => issue.path[2])).toContain("aliases");
