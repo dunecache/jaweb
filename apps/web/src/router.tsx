@@ -1,22 +1,54 @@
 import type { Role } from "@jaweb/shared";
-import type { ReactNode } from "react";
+import { lazy, type ReactNode, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router";
+
 import { LoadingState } from "@/components/app/data-state";
 import { PlaceholderShell } from "@/components/app/placeholder-shell";
 import { useMe } from "@/lib/auth";
-import { LeaderboardPage } from "@/routes/leaderboard/leaderboard-page";
-import { LoginPage } from "@/routes/login/login-page";
-import { HistoryPage } from "@/routes/student/history-page";
-import { StudentPage } from "@/routes/student/student-page";
-import { ClassesPage } from "@/routes/teacher/classes-page";
-import { ExerciseEditorPage } from "@/routes/teacher/exercise-editor-page";
-import { ExercisesPage } from "@/routes/teacher/exercises-page";
-import { ModulesPage } from "@/routes/teacher/modules-page";
-import { MonitorPage } from "@/routes/teacher/monitor-page";
-import { ReviewPage } from "@/routes/teacher/review-page";
-import { SettingsPage } from "@/routes/teacher/settings-page";
-import { StudentsPage } from "@/routes/teacher/students-page";
-import { TeacherLayout, TeacherOverviewPage } from "@/routes/teacher/teacher-layout";
+
+// Route trees are code-split: teachers and students only download their own views.
+const LoginPage = lazy(() =>
+  import("@/routes/login/login-page").then((m) => ({ default: m.LoginPage })),
+);
+const StudentPage = lazy(() =>
+  import("@/routes/student/student-page").then((m) => ({ default: m.StudentPage })),
+);
+const HistoryPage = lazy(() =>
+  import("@/routes/student/history-page").then((m) => ({ default: m.HistoryPage })),
+);
+const LeaderboardPage = lazy(() =>
+  import("@/routes/leaderboard/leaderboard-page").then((m) => ({ default: m.LeaderboardPage })),
+);
+const TeacherLayout = lazy(() =>
+  import("@/routes/teacher/teacher-layout").then((m) => ({ default: m.TeacherLayout })),
+);
+const TeacherOverviewPage = lazy(() =>
+  import("@/routes/teacher/teacher-layout").then((m) => ({ default: m.TeacherOverviewPage })),
+);
+const ClassesPage = lazy(() =>
+  import("@/routes/teacher/classes-page").then((m) => ({ default: m.ClassesPage })),
+);
+const StudentsPage = lazy(() =>
+  import("@/routes/teacher/students-page").then((m) => ({ default: m.StudentsPage })),
+);
+const ModulesPage = lazy(() =>
+  import("@/routes/teacher/modules-page").then((m) => ({ default: m.ModulesPage })),
+);
+const ExercisesPage = lazy(() =>
+  import("@/routes/teacher/exercises-page").then((m) => ({ default: m.ExercisesPage })),
+);
+const ExerciseEditorPage = lazy(() =>
+  import("@/routes/teacher/exercise-editor-page").then((m) => ({ default: m.ExerciseEditorPage })),
+);
+const MonitorPage = lazy(() =>
+  import("@/routes/teacher/monitor-page").then((m) => ({ default: m.MonitorPage })),
+);
+const ReviewPage = lazy(() =>
+  import("@/routes/teacher/review-page").then((m) => ({ default: m.ReviewPage })),
+);
+const SettingsPage = lazy(() =>
+  import("@/routes/teacher/settings-page").then((m) => ({ default: m.SettingsPage })),
+);
 
 function GuardLoading() {
   return (
@@ -93,5 +125,9 @@ const router = createBrowserRouter([
 ]);
 
 export function Router() {
-  return <RouterProvider router={router} />;
+  return (
+    <Suspense fallback={<GuardLoading />}>
+      <RouterProvider router={router} />
+    </Suspense>
+  );
 }

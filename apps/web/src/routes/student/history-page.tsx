@@ -4,8 +4,10 @@ import { useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/app/data-state";
 import { apiRequest } from "@/lib/api";
+import { LocaleSwitcher, useI18n } from "@/lib/i18n";
 
 export function HistoryPage() {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
   const list = useQuery({
     queryKey: ["student", "history"],
@@ -25,13 +27,16 @@ export function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-[720px] space-y-6 px-4 py-10">
-      <div>
-        <h1 className="font-display text-3xl text-ink">Your history</h1>
-        <p className="mt-2 text-sm text-ink-muted">Answers and grades from past exercises.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl text-ink">{t("yourHistory")}</h1>
+          <p className="mt-2 text-sm text-ink-muted">{t("historyHint")}</p>
+        </div>
+        <LocaleSwitcher />
       </div>
 
       {list.data.exercises.length === 0 ? (
-        <EmptyState message="No closed exercises yet." />
+        <EmptyState message={t("emptyHistory")} />
       ) : (
         <div className="space-y-3">
           {list.data.exercises.map((item) => (
@@ -46,7 +51,7 @@ export function HistoryPage() {
                   {item.title}
                 </p>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {item.submittedCount} of {item.questionCount} answered
+                  {t("answeredOf", { count: item.submittedCount, total: item.questionCount })}
                 </p>
               </div>
               <span className="font-mono text-lg text-ink">{item.myPoints} pts</span>

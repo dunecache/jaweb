@@ -8,6 +8,8 @@ import "@fontsource/jetbrains-mono/400.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 
+import { ToastProvider } from "./components/app/toaster";
+import { I18nProvider } from "./lib/i18n";
 import { Router } from "./router";
 import "./styles/theme.css";
 
@@ -26,6 +28,10 @@ if (!rootElement) throw new Error("Missing #root element");
 
 createRoot(rootElement).render(
   <QueryClientProvider client={queryClient}>
-    <Router />
+    <I18nProvider>
+      <ToastProvider>
+        <Router />
+      </ToastProvider>
+    </I18nProvider>
   </QueryClientProvider>,
 );

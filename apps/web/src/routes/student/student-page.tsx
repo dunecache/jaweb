@@ -5,9 +5,11 @@ import { Link } from "react-router";
 
 import { ConfirmButton } from "@/components/app/confirm-dialog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/app/data-state";
+import { useToast } from "@/components/app/toaster";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api";
 import { useMe } from "@/lib/auth";
+import { LocaleSwitcher, useI18n } from "@/lib/i18n";
 import { usePolledQuery } from "@/lib/polling";
 
 function draftKey(questionId: string): string {
@@ -23,6 +25,7 @@ function QuestionForm({
   onSubmit: (answer: unknown) => void;
   submitting: boolean;
 }) {
+  const { t } = useI18n();
   const [choice, setChoice] = useState<string>(
     () => localStorage.getItem(draftKey(question.id)) ?? "",
   );
@@ -97,10 +100,10 @@ function QuestionForm({
       <div className="mt-5">
         <ConfirmButton
           variant="default"
-          label="Submit answer"
-          title="Submit your answer?"
+          label={t("submitAnswer")}
+          title={t("submitAnswer")}
           description="You can only submit once. Check your answer before confirming."
-          confirmLabel="Submit"
+          confirmLabel={t("submitAnswer")}
           onConfirm={() => onSubmit(answer)}
         />
       </div>
@@ -114,13 +117,24 @@ function QuestionForm({
 
 export function StudentPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { t } = useI18n();
   const me = useMe();
   const current = usePolledQuery<StudentCurrent>(["student", "current"], "/student/current");
   const [now, setNow] = useState(Date.now());
+  const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
   }, []);
 
   const submit = useMutation({
@@ -129,7 +143,10 @@ export function StudentPage() {
         method: "POST",
         body: JSON.stringify({ questionId, answer }),
       }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["student", "current"] }),
+    onSuccess: () => {
+      toast(t("submitted"));
+      void queryClient.invalidateQueries({ queryKey: ["student", "current"] });
+    },
   });
 
   if (me.isPending || current.isPending) return <LoadingState label="Loading your exercise" />;
@@ -144,10 +161,8 @@ export function StudentPage() {
   if (!data?.exercise) {
     return (
       <div className="mx-auto max-w-[720px] px-4 py-12">
-        <h1 className="font-display text-3xl text-ink">Nothing is live right now.</h1>
-        <p className="mt-2 text-sm text-ink-muted">
-          Your teacher will push an exercise to your class.
-        </p>
+        <h1 className="font-display text-3xl text-ink">{t("nothingLive")}</h1>
+        <p className="mt-2 text-sm text-ink-muted">{t("nothingLiveHint")}</p>
       </div>
     );
   }
@@ -160,17 +175,31 @@ export function StudentPage() {
 
   return (
     <div className="mx-auto max-w-[720px] space-y-6 px-4 py-10">
-      <nav className="flex gap-4 text-sm text-accent" aria-label="Student navigation">
-        <Link to="/student/history">History</Link>
-        <Link to="/leaderboard">Leaderboard</Link>
+      <nav
+        className="flex items-center justify-between gap-4 text-sm text-accent"
+        aria-label="Student navigation"
+      >
+        <div className="flex gap-4">
+          <Link to="/student/history">{t("history")}</Link>
+          <Link to="/leaderboard">{t("leaderboard")}</Link>
+        </div>
+        <LocaleSwitcher />
       </nav>
+      {!online ? (
+        <div
+          className="rounded-card border border-warning/30 bg-warning/5 p-3 text-sm text-warning"
+          role="status"
+        >
+          {t("disconnected")}
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl text-ink" dir="auto">
             {data.exercise.title}
           </h1>
           <p className="mt-2 text-sm text-ink-muted" aria-live="polite">
-            You answered {answered.size} of {data.questions.length}.
+            {t("youAnswered", { count: answered.size, total: data.questions.length })}
           </p>
         </div>
         {remaining !== null ? (
@@ -178,7 +207,7 @@ export function StudentPage() {
             <p className="font-mono text-lg text-ink">
               {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
             </p>
-            <p className="text-xs text-ink-muted">time left</p>
+            <p className="text-xs text-ink-muted">{t("timeLeft")}</p>
           </div>
         ) : null}
       </div>
@@ -191,7 +220,7 @@ export function StudentPage() {
               aria-live="polite"
             >
               <span dir="auto">{question.prompt}</span>
-              <span className="ml-2 text-success">submitted</span>
+              <span className="ml-2 text-success">{t("submitted")}</span>
             </div>
           ) : (
             <QuestionForm

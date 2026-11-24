@@ -11,10 +11,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useMe } from "@/lib/auth";
+import { LocaleSwitcher, useI18n } from "@/lib/i18n";
 import { usePolledQuery } from "@/lib/polling";
 
 export function LeaderboardPage() {
   const me = useMe();
+  const { t } = useI18n();
   const [scope, setScope] = useState<"live" | "all">("all");
   const board = usePolledQuery<Leaderboard>(
     ["leaderboard", scope],
@@ -40,7 +42,8 @@ export function LeaderboardPage() {
             {me.data?.role === "teacher" ? "All students in the class" : "Your class"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <LocaleSwitcher />
           {(["all", "live"] as const).map((option) => (
             <button
               key={option}
@@ -52,7 +55,7 @@ export function LeaderboardPage() {
                   : "border-hairline bg-surface text-ink-muted"
               }`}
             >
-              {option === "all" ? "All time" : "Live"}
+              {t(option === "all" ? "allTime" : "live")}
             </button>
           ))}
         </div>
@@ -66,16 +69,16 @@ export function LeaderboardPage() {
 
       {data.visibility === "hidden" && me.data?.role !== "teacher" ? (
         <p className="rounded-card border border-hairline bg-surface p-6 text-sm text-ink-muted">
-          The leaderboard is hidden by your teacher.
+          {t("leaderboardHidden")}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-card border border-hairline bg-surface">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Rank</TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead className="text-right">Points</TableHead>
+                <TableHead>{t("rank")}</TableHead>
+                <TableHead>{t("student")}</TableHead>
+                <TableHead className="text-right">{t("points")}</TableHead>
                 <TableHead className="text-right">Graded</TableHead>
                 <TableHead className="text-right">Pending</TableHead>
               </TableRow>

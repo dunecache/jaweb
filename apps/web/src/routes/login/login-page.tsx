@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 
+import { useToast } from "@/components/app/toaster";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ export function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const mutation = useMutation({
@@ -23,6 +25,7 @@ export function LoginPage() {
       queryClient.setQueryData(meQueryKey, user);
       navigate(user.role === "teacher" ? "/teacher" : "/student", { replace: true });
     },
+    onError: () => toast("Sign-in failed. Check your credentials."),
   });
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {

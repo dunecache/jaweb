@@ -240,12 +240,12 @@ The roadmap is shaped so multiple agents can work at once without coordinating i
 
 **Swarm:** C shared infra (i18n scaffolding, toasts, skeletons) lands first; A student tree ∥ B teacher tree after.
 
-- [ ] Skeleton / empty / error audit across all views; toast system for mutations
-- [ ] Responsive pass 375 → 1440 (student flows phone-first); teacher dashboard ≥ 1024
-- [ ] Keyboard-only pass + focus management in dialogs; `aria-live` for grading results and countdown milestones
-- [ ] Reduced-motion variants (including the live pulse); disconnect banner + draft recovery
-- [ ] Microcopy pass per §11 tone; code-split teacher/student trees; query cache tuning; favicon + meta
-- [ ] Student-facing i18n: French + Arabic with RTL (logical CSS properties, `dir="auto"`); teacher UI stays EN in v1
+- [x] Skeleton / empty / error audit across all views; toast system for mutations
+- [x] Responsive pass 375 → 1440 (student flows phone-first); teacher dashboard ≥ 1024
+- [x] Keyboard-only pass + focus management in dialogs; `aria-live` for grading results and countdown milestones
+- [x] Reduced-motion variants (including the live pulse); disconnect banner + draft recovery
+- [x] Microcopy pass per §11 tone; code-split teacher/student trees; query cache tuning; favicon + meta
+- [x] Student-facing i18n: French + Arabic with RTL (logical CSS properties, `dir="auto"`); teacher UI stays EN in v1
 - [ ] Optional: dark mode tokens behind a flag
 
 **Acceptance:** axe scan clean (no critical violations) on core flows; keyboard-only completes login → answer → history; Lighthouse a11y ≥ 95 on the student page; 375px screenshots reviewed; Arabic RTL smoke passes on the student flow.
