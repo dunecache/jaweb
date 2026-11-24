@@ -8,6 +8,9 @@ import { LeaderboardPage } from "@/routes/leaderboard/leaderboard-page";
 import { LoginPage } from "@/routes/login/login-page";
 import { StudentPage } from "@/routes/student/student-page";
 import { ClassesPage } from "@/routes/teacher/classes-page";
+import { ExerciseEditorPage } from "@/routes/teacher/exercise-editor-page";
+import { ExercisesPage } from "@/routes/teacher/exercises-page";
+import { ModulesPage } from "@/routes/teacher/modules-page";
 import { StudentsPage } from "@/routes/teacher/students-page";
 import { TeacherLayout, TeacherOverviewPage } from "@/routes/teacher/teacher-layout";
 
@@ -51,6 +54,9 @@ const router = createBrowserRouter([
       { index: true, element: <TeacherOverviewPage /> },
       { path: "classes", element: <ClassesPage /> },
       { path: "students", element: <StudentsPage /> },
+      { path: "modules", element: <ModulesPage /> },
+      { path: "exercises", element: <ExercisesPage /> },
+      { path: "exercises/:id", element: <ExerciseEditorPage /> },
     ],
   },
   {

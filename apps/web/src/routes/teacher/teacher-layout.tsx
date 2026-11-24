@@ -23,6 +23,12 @@ export function TeacherLayout() {
               <Link to="/teacher/students" className="hover:text-ink">
                 Students
               </Link>
+              <Link to="/teacher/modules" className="hover:text-ink">
+                Modules
+              </Link>
+              <Link to="/teacher/exercises" className="hover:text-ink">
+                Exercises
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">
@@ -55,7 +61,7 @@ export function TeacherOverviewPage() {
           Manage your classes and students. Curriculum authoring arrives in Phase 2.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           to="/teacher/classes"
           className="rounded-card border border-hairline bg-surface p-6 hover:border-accent"
@@ -69,6 +75,20 @@ export function TeacherOverviewPage() {
         >
           <h2 className="font-display text-lg text-ink">Students</h2>
           <p className="mt-1 text-sm text-ink-muted">Accounts, rosters, and passwords.</p>
+        </Link>
+        <Link
+          to="/teacher/modules"
+          className="rounded-card border border-hairline bg-surface p-6 hover:border-accent"
+        >
+          <h2 className="font-display text-lg text-ink">Modules</h2>
+          <p className="mt-1 text-sm text-ink-muted">Ordered curriculum groups.</p>
+        </Link>
+        <Link
+          to="/teacher/exercises"
+          className="rounded-card border border-hairline bg-surface p-6 hover:border-accent"
+        >
+          <h2 className="font-display text-lg text-ink">Exercises</h2>
+          <p className="mt-1 text-sm text-ink-muted">Author questions, then go live.</p>
         </Link>
       </div>
     </div>

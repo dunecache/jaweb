@@ -66,6 +66,74 @@ export const answerSchema = z.discriminatedUnion("kind", [
 ]);
 export type Answer = z.infer<typeof answerSchema>;
 
+export const moduleSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().nullable(),
+  position: z.number().int(),
+  archivedAt: z.string().nullable(),
+});
+export type ModuleDto = z.infer<typeof moduleSchema>;
+
+export const exerciseSchema = z.object({
+  id: z.string().min(1),
+  moduleId: z.string().min(1),
+  classId: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().nullable(),
+  type: exerciseTypeSchema,
+  status: exerciseStatusSchema,
+  verdictVisibility: verdictVisibilitySchema,
+  opensAt: z.string().nullable(),
+  closesAt: z.string().nullable(),
+  speedWindowSeconds: z.number().int(),
+  weightCorrect: z.number(),
+  weightSpeed: z.number(),
+  createdBy: z.string().min(1),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type ExerciseDto = z.infer<typeof exerciseSchema>;
+
+export const questionSchema = z.object({
+  id: z.string().min(1),
+  exerciseId: z.string().min(1),
+  position: z.number().int(),
+  prompt: z.string().min(1),
+  kind: questionKindSchema,
+  options: z.array(optionSchema).nullable(),
+  correctOptionIds: z.array(z.string()).nullable(),
+  modelAnswer: z.string().nullable(),
+  keyPoints: z.array(z.string()).nullable(),
+  aliases: z.array(z.string()).nullable(),
+  points: z.number().int(),
+  partialCredit: z.boolean(),
+  createdAt: z.string(),
+});
+export type QuestionDto = z.infer<typeof questionSchema>;
+
+// The only question fields a student route may ever see (AGENTS §6).
+export const studentSafeQuestionSchema = z.object({
+  id: z.string().min(1),
+  position: z.number().int(),
+  prompt: z.string().min(1),
+  kind: questionKindSchema,
+  options: z.array(optionSchema).nullable(),
+  points: z.number().int(),
+});
+export type StudentSafeQuestion = z.infer<typeof studentSafeQuestionSchema>;
+
+export function studentSafeQuestion(question: QuestionDto): StudentSafeQuestion {
+  return studentSafeQuestionSchema.parse({
+    id: question.id,
+    position: question.position,
+    prompt: question.prompt,
+    kind: question.kind,
+    options: question.options,
+    points: question.points,
+  });
+}
+
 export const gradeResultSchema = z.object({
   score: z.union([z.literal(0), z.literal(0.5), z.literal(1)]),
   verdict: verdictSchema,

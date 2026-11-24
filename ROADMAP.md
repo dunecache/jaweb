@@ -121,12 +121,12 @@ The roadmap is shaped so multiple agents can work at once without coordinating i
 
 **Swarm:** A authoring API (owns schema) · B authoring UI · C preview/guards/fixtures — all three parallel once A's contract update lands in `packages/shared`.
 
-- [ ] Modules CRUD + reorder + archive (archive-only delete)
-- [ ] Exercises CRUD: type, class binding (`class_id`), scheduling fields (`opens_at`/`closes_at`), per-exercise weights, speed window, and `verdict_visibility` (default by type)
-- [ ] Question editor per kind: options with correct toggles; model answer + key points + aliases; points; partial-credit toggle
-- [ ] Shared zod contracts in `packages/shared`
-- [ ] Teacher preview of a draft rendered exactly as students will see it
-- [ ] Guards: go-live requires ≥ 1 question and a complete answer key per kind; live exercises immutable
+- [x] Modules CRUD + reorder + archive (archive-only delete)
+- [x] Exercises CRUD: type, class binding (`class_id`), scheduling fields (`opens_at`/`closes_at`), per-exercise weights, speed window, and `verdict_visibility` (default by type)
+- [x] Question editor per kind: options with correct toggles; model answer + key points + aliases; points; partial-credit toggle
+- [x] Shared zod contracts in `packages/shared`
+- [x] Teacher preview of a draft rendered exactly as students will see it
+- [x] Guards: go-live requires ≥ 1 question and a complete answer key per kind; live exercises immutable
 
 **Acceptance:**
 
