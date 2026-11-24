@@ -1,0 +1,25 @@
+{
+  "name": "@jaweb/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.11",
+    "@jaweb/shared": "workspace:*",
+    "@libsql/client": "0.18.0",
+    "dotenv": "18.0.10",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.21",
+    "pino": "10.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

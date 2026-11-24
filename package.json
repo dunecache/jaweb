@@ -1,0 +1,32 @@
+{
+  "name": "jaweb",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"pnpm --filter @jaweb/api dev\" \"pnpm --filter @jaweb/web dev\"",
+    "build": "pnpm typecheck && pnpm --filter @jaweb/web build",
+    "typecheck": "pnpm --filter @jaweb/shared typecheck && pnpm --filter @jaweb/api typecheck && pnpm --filter @jaweb/web typecheck && tsc --noEmit -p tsconfig.tests.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "db:generate": "drizzle-kit generate --config apps/api/drizzle.config.ts",
+    "db:migrate": "tsx apps/api/src/db/migrate.ts",
+    "db:seed": "tsx apps/api/src/db/seed.ts",
+    "db:studio": "drizzle-kit studio --config apps/api/drizzle.config.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.9",
+    "@types/node": "26.6.7",
+    "concurrently": "10.0.7",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1"
+  }
+}

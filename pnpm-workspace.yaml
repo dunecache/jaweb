@@ -1,0 +1,13 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 12 reads all settings from this file, not package.json#pnpm.
+allowBuilds:
+  # esbuild's Android/Termux binary cannot execute in this sandbox (dlsym error).
+  # CI runs on Linux where the standard postinstall works normally.
+  esbuild: false
+# The committed lockfile is the trust anchor; skip the slow per-entry registry
+# supply-chain re-verification on every command (CI installs with --frozen-lockfile).
+trustLockfile: true
+verifyDepsBeforeRun: false
