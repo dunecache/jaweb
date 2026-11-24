@@ -15,6 +15,7 @@ const envSchema = z.object({
   COOKIE_SECURE: z.enum(["auto", "always", "never"]).default("auto"),
   TEACHER_INITIAL_USERNAME: z.string().optional(),
   TEACHER_INITIAL_PASSWORD: z.string().optional(),
+  SEED_DEMO_CLASS: z.string().optional(),
   PORT: z.coerce.number().int().positive().max(65535).default(8787),
   WEB_ORIGIN: z.string().default("http://localhost:5173"),
 });

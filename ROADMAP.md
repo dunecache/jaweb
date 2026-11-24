@@ -98,12 +98,12 @@ The roadmap is shaped so multiple agents can work at once without coordinating i
 
 **Swarm:** A auth API (owns schema) merges first; B students/classes API builds on A's schema; C login + shell UI runs parallel to both against the frozen contracts.
 
-- [ ] `users` + `sessions` tables; argon2id hashing
-- [ ] Login / logout / me; DB-backed session cookie (httpOnly, SameSite=Lax, 7-day sliding; `Secure` follows `COOKIE_SECURE`)
-- [ ] Auth + role middleware; Origin check on mutations; login protection: per-username lockout (5 consecutive failures → 1 min, doubling to 15 min) + per-IP ceiling 30/min (shared NAT/CGNAT)
-- [ ] Teacher: create / rename / archive students, reset passwords; seed script (teacher from env, optional demo class)
-- [ ] `classes` table + CRUD (rename/reorder/archive); students created with a `class_id`
-- [ ] Session revocation on password reset and archive; archived users cannot log in
+- [x] `users` + `sessions` tables; argon2id hashing
+- [x] Login / logout / me; DB-backed session cookie (httpOnly, SameSite=Lax, 7-day sliding; `Secure` follows `COOKIE_SECURE`)
+- [x] Auth + role middleware; Origin check on mutations; login protection: per-username lockout (5 consecutive failures → 1 min, doubling to 15 min) + per-IP ceiling 30/min (shared NAT/CGNAT)
+- [x] Teacher: create / rename / archive students, reset passwords; seed script (teacher from env, optional demo class)
+- [x] `classes` table + CRUD (rename/reorder/archive); students created with a `class_id`
+- [x] Session revocation on password reset and archive; archived users cannot log in
 
 **Acceptance:**
 

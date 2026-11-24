@@ -9,5 +9,7 @@ allowBuilds:
   esbuild: false
 # The committed lockfile is the trust anchor; skip the slow per-entry registry
 # supply-chain re-verification on every command (CI installs with --frozen-lockfile).
+minimumReleaseAgeExclude:
+  - "@types/node@26.6.7"
 trustLockfile: true
 verifyDepsBeforeRun: false

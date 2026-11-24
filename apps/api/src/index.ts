@@ -9,9 +9,13 @@ import { Hono } from "hono";
 
 import { env } from "./env";
 import type { AppEnv } from "./lib/app-types";
+import { originCheck } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
 import { loggerMiddleware } from "./middleware/logger";
+import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
+import { teacherClassesRoutes } from "./routes/teacher/classes";
+import { teacherStudentsRoutes } from "./routes/teacher/students";
 
 const notFoundBody: ErrorEnvelope = {
   error: { code: "NOT_FOUND", message: "Resource not found" },
@@ -20,7 +24,11 @@ const notFoundBody: ErrorEnvelope = {
 export const app = new Hono<AppEnv>();
 
 app.use("*", loggerMiddleware);
+app.use("*", originCheck);
 app.route("/api/health", healthRoutes);
+app.route("/api/auth", authRoutes);
+app.route("/api/teacher/classes", teacherClassesRoutes);
+app.route("/api/teacher/students", teacherStudentsRoutes);
 app.all("/api/*", (c) => c.json(notFoundBody, 404));
 
 // Production serves the built SPA from the API origin; dev uses the Vite proxy.

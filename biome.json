@@ -7,7 +7,8 @@
       "!**/dist",
       "!**/*.db",
       "!**/*.md",
-      "!**/src/db/migrations/**"
+      "!**/src/db/migrations",
+      "!**/src/components/ui"
     ]
   },
   "formatter": {
