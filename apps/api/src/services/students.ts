@@ -63,7 +63,7 @@ export async function createStudent(input: CreateStudentRequest): Promise<Studen
     .get();
   if (existing) throw new ConflictError("Username already taken");
 
-  const classId = input.classId ?? null;
+  const classId = input.classId || null;
   if (classId) await assertClassExists(classId);
 
   const row: StudentRow = {
@@ -96,7 +96,7 @@ export async function patchStudent(id: string, input: PatchStudentRequest): Prom
     .get();
   if (!row) throw new NotFoundError("Student not found");
 
-  const classId = input.classId === undefined ? row.classId : input.classId;
+  const classId = input.classId === undefined ? row.classId : input.classId || null;
   if (classId) await assertClassExists(classId);
 
   const updated: StudentRow = {

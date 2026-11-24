@@ -83,42 +83,35 @@ beforeAll(async () => {
     .where(eq(users.username, "student"))
     .get();
   if (!teacher || !student) throw new Error("seed failed");
-  const revokeUser = await db
-    .insert(users)
-    .values({
-      id: newId(),
-      username: "student4",
-      displayName: "Student Four",
-      role: "student",
-      passwordHash: studentHash,
-      createdAt: nowIso(),
-    })
-    .returning({ id: users.id });
+  // libSQL's RETURNING is unreliable here: generate ids up front.
+  const revokeUserId = newId();
+  await db.insert(users).values({
+    id: revokeUserId,
+    username: "student4",
+    displayName: "Student Four",
+    role: "student",
+    passwordHash: studentHash,
+    createdAt: nowIso(),
+  });
   teacherToken = newSessionToken();
   studentToken = newSessionToken();
   revokeToken = newSessionToken();
   await createSession(teacher.id, teacherToken);
   await createSession(student.id, studentToken);
-  if (revokeUser[0]) await createSession(revokeUser[0].id, revokeToken);
+  await createSession(revokeUserId, revokeToken);
 
-  const created = await db
-    .insert(classes)
-    .values({ id: newId(), name: "2AS-1", position: 1, createdAt: nowIso() })
-    .returning({ id: classes.id });
-  classId = created[0]?.id ?? "";
-  const studentRow = await db
-    .insert(users)
-    .values({
-      id: newId(),
-      username: "student2",
-      displayName: "Student Two",
-      role: "student",
-      passwordHash: studentHash,
-      classId,
-      createdAt: nowIso(),
-    })
-    .returning({ id: users.id });
-  studentId = studentRow[0]?.id ?? "";
+  classId = newId();
+  await db.insert(classes).values({ id: classId, name: "2AS-1", position: 1, createdAt: nowIso() });
+  studentId = newId();
+  await db.insert(users).values({
+    id: studentId,
+    username: "student2",
+    displayName: "Student Two",
+    role: "student",
+    passwordHash: studentHash,
+    classId,
+    createdAt: nowIso(),
+  });
 });
 
 describe("auth", () => {
