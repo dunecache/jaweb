@@ -140,8 +140,10 @@ beforeAll(async () => {
   });
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   resetFakeResponses();
+  // One active submission per (question, student) — start each test clean.
+  await db.delete(submissions);
 });
 
 describe("multilingual grading pipeline", () => {

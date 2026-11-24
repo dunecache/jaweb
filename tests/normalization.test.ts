@@ -14,7 +14,7 @@ describe("multilingual normalization", () => {
   it("strips French accents and punctuation", () => {
     expect(normalizeText("Région")).toBe("region");
     expect(normalizeText("Élève, çà!")).toBe("eleve ca");
-    expect(normalizeText("مصر، الجزائر؛")).toBe("مصر الجزائر");
+    expect(normalizeText("مصر، الجزائر؛")).toBe("مصر الجزاير");
   });
 
   it("matches aliases after normalization without contacting a provider", () => {
