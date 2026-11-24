@@ -29,6 +29,12 @@ export function TeacherLayout() {
               <Link to="/teacher/exercises" className="hover:text-ink">
                 Exercises
               </Link>
+              <Link to="/teacher/review" className="hover:text-ink">
+                Review
+              </Link>
+              <Link to="/teacher/settings" className="hover:text-ink">
+                Settings
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">

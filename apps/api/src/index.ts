@@ -8,6 +8,7 @@ import type { ErrorEnvelope } from "@jaweb/shared";
 import { Hono } from "hono";
 
 import { env } from "./env";
+import { recoverStaleGrading } from "./grading/queue";
 import type { AppEnv } from "./lib/app-types";
 import { originCheck } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
@@ -21,7 +22,9 @@ import { teacherClassesRoutes } from "./routes/teacher/classes";
 import { teacherExercisesRoutes } from "./routes/teacher/exercises";
 import { teacherModulesRoutes } from "./routes/teacher/modules";
 import { teacherQuestionsRoutes } from "./routes/teacher/questions";
+import { teacherSettingsRoutes } from "./routes/teacher/settings";
 import { teacherStudentsRoutes } from "./routes/teacher/students";
+import { teacherSubmissionRoutes } from "./routes/teacher/submissions";
 
 const notFoundBody: ErrorEnvelope = {
   error: { code: "NOT_FOUND", message: "Resource not found" },
@@ -38,6 +41,8 @@ app.route("/api/teacher/students", teacherStudentsRoutes);
 app.route("/api/teacher/modules", teacherModulesRoutes);
 app.route("/api/teacher/exercises", teacherExercisesRoutes);
 app.route("/api/teacher/questions", teacherQuestionsRoutes);
+app.route("/api/teacher/settings/grading", teacherSettingsRoutes);
+app.route("/api/teacher/submissions", teacherSubmissionRoutes);
 app.route("/api/student/current", studentCurrentRoutes);
 app.route("/api/student/exercises", studentExercisesRoutes);
 app.route("/api/student/submissions", studentSubmissionRoutes);
@@ -54,6 +59,7 @@ app.notFound((c) => c.json(notFoundBody, 404));
 app.onError(errorHandler);
 
 export function startServer(): void {
+  void recoverStaleGrading();
   serve({ fetch: app.fetch, port: env.PORT }, (info) => {
     console.log(`Jaweb API listening on http://localhost:${info.port}`);
   });

@@ -5,15 +5,16 @@ import {
   type SubmissionDto,
   submissionDtoSchema,
 } from "@jaweb/shared";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "../db/client";
 import { submissions } from "../db/schema";
+import { enqueueGrading } from "../grading/queue";
 import { ConflictError } from "../lib/errors";
 import { newId } from "../lib/ids";
 import { nowIso } from "../lib/time";
 import { getParticipation, touchParticipation } from "./participations";
-import { gradeObjective, verdictFor } from "./scoring";
+import { applyPoints, gradeObjective, verdictFor } from "./scoring";
 
 export async function createSubmission(input: {
   exercise: ExerciseDto;
@@ -25,7 +26,13 @@ export async function createSubmission(input: {
   const existing = await db
     .select({ id: submissions.id })
     .from(submissions)
-    .where(and(eq(submissions.questionId, question.id), eq(submissions.studentId, studentId)))
+    .where(
+      and(
+        eq(submissions.questionId, question.id),
+        eq(submissions.studentId, studentId),
+        isNull(submissions.archivedAt),
+      ),
+    )
     .get();
   if (existing) throw new ConflictError("You have already submitted this question");
 
@@ -52,6 +59,8 @@ export async function createSubmission(input: {
     flagged,
   };
   await db.insert(submissions).values(row);
+  if (score === null) enqueueGrading(row.id);
+  else await applyPoints(row.id);
 
   return {
     status: score === null ? 202 : 201,
@@ -81,6 +90,12 @@ export async function mySubmissions(exerciseId: string, studentId: string) {
       flagged: submissions.flagged,
     })
     .from(submissions)
-    .where(and(eq(submissions.exerciseId, exerciseId), eq(submissions.studentId, studentId)));
+    .where(
+      and(
+        eq(submissions.exerciseId, exerciseId),
+        eq(submissions.studentId, studentId),
+        isNull(submissions.archivedAt),
+      ),
+    );
   return rows.map((row) => submissionDtoSchema.parse(row));
 }

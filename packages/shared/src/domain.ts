@@ -159,6 +159,24 @@ export const submissionDtoSchema = z.object({
 });
 export type SubmissionDto = z.infer<typeof submissionDtoSchema>;
 
+export const teacherSubmissionSchema = z.object({
+  id: z.string().min(1),
+  exerciseId: z.string().min(1),
+  questionId: z.string().min(1),
+  studentId: z.string().min(1),
+  answer: answerSchema.nullable(),
+  submittedAt: z.string(),
+  status: submissionStatusSchema,
+  score: z.number().min(0).max(1).nullable(),
+  verdict: verdictSchema.nullable(),
+  feedback: z.string().nullable(),
+  gradedBy: gradedBySchema.nullable(),
+  gradedAt: z.string().nullable(),
+  points: z.number().int().nullable(),
+  flagged: z.boolean(),
+});
+export type TeacherSubmission = z.infer<typeof teacherSubmissionSchema>;
+
 export function deriveVerdict(score: number): Verdict {
   return score >= 1 ? "correct" : score > 0 ? "partial" : "wrong";
 }

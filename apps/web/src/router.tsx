@@ -11,6 +11,8 @@ import { ClassesPage } from "@/routes/teacher/classes-page";
 import { ExerciseEditorPage } from "@/routes/teacher/exercise-editor-page";
 import { ExercisesPage } from "@/routes/teacher/exercises-page";
 import { ModulesPage } from "@/routes/teacher/modules-page";
+import { ReviewPage } from "@/routes/teacher/review-page";
+import { SettingsPage } from "@/routes/teacher/settings-page";
 import { StudentsPage } from "@/routes/teacher/students-page";
 import { TeacherLayout, TeacherOverviewPage } from "@/routes/teacher/teacher-layout";
 
@@ -57,6 +59,8 @@ const router = createBrowserRouter([
       { path: "modules", element: <ModulesPage /> },
       { path: "exercises", element: <ExercisesPage /> },
       { path: "exercises/:id", element: <ExerciseEditorPage /> },
+      { path: "review", element: <ReviewPage /> },
+      { path: "settings", element: <SettingsPage /> },
     ],
   },
   {

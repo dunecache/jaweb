@@ -165,16 +165,16 @@ The roadmap is shaped so multiple agents can work at once without coordinating i
 
 **Swarm:** D normalization + alias fast-path has zero dependencies — pull it forward into Phase 2/3 whenever an agent is idle. A providers+settings API (owns schema) ∥ B grading pipeline; C settings + review UI after A's contract.
 
-- [ ] Multilingual normalization + alias fast-path (Arabic: tashkeel/tatweel stripped, alef variants unified, ة→ه, ى→ي; French: accents stripped, ç→c; Arabic/French punctuation) — zero LLM calls on alias match
-- [ ] `GradeProvider` interface; adapters `google` (Gemini flash-lite), `opencode` (OpenAI-compatible Console gateway), `openai`, `ollama` functional end-to-end; `anthropic`/`openrouter` optional; `fake` for tests
+- [x] Multilingual normalization + alias fast-path (Arabic: tashkeel/tatweel stripped, alef variants unified, ة→ه, ى→ي; French: accents stripped, ç→c; Arabic/French punctuation) — zero LLM calls on alias match
+- [x] `GradeProvider` interface; adapters `google` (Gemini flash-lite), `opencode` (OpenAI-compatible Console gateway), `openai`, `ollama` functional end-to-end; `anthropic`/`openrouter` optional; `fake` for tests
 - [ ] Provider gate: with the teacher, verify the payable path from Algeria (Google AI Studio free tier first, then OpenCode Console credits, then OpenAI) and record the chosen default in AGENTS §5
-- [ ] Settings UI + API: provider/model picker, API-key entry, "Test connection" (one-token ping, latency shown); keys AES-256-GCM-encrypted at rest (`SETTINGS_ENC_KEY`), responses masked to last4; resolution DB → env → unconfigured (`needs_review` + setup banner); provider/model swap effective next submission, no redeploy
-- [ ] LLM payload minimization: only question text, reference material, and answer text — no names, usernames, or class names (asserted in tests)
-- [ ] Strict system prompt per AGENTS.md §9.4 (incl. Arabic/French/English language rule); temperature 0; JSON output zod-validated; ≤ 2 retries then `needs_review`
-- [ ] Background grading (in-process queue); re-enqueue rows stuck in `grading` > 2 min on boot
-- [ ] Confidence < 0.7 → `needs_review`; teacher review queue UI + override API (`graded_by='teacher'`, final); teacher unlock-for-retake
-- [ ] Scoring service applies §9.5 to every graded submission (deterministic ones included)
-- [ ] Feedback withheld from student payloads until close — enforced in serializers + leak test
+- [x] Settings UI + API: provider/model picker, API-key entry, "Test connection" (one-token ping, latency shown); keys AES-256-GCM-encrypted at rest (`SETTINGS_ENC_KEY`), responses masked to last4; resolution DB → env → unconfigured (`needs_review` + setup banner); provider/model swap effective next submission, no redeploy
+- [x] LLM payload minimization: only question text, reference material, and answer text — no names, usernames, or class names (asserted in tests)
+- [x] Strict system prompt per AGENTS.md §9.4 (incl. Arabic/French/English language rule); temperature 0; JSON output zod-validated; ≤ 2 retries then `needs_review`
+- [x] Background grading (in-process queue); re-enqueue rows stuck in `grading` > 2 min on boot
+- [x] Confidence < 0.7 → `needs_review`; teacher review queue UI + override API (`graded_by='teacher'`, final); teacher unlock-for-retake
+- [x] Scoring service applies §9.5 to every graded submission (deterministic ones included)
+- [x] Feedback withheld from student payloads until close — enforced in serializers + leak test
 
 **Acceptance:**
 

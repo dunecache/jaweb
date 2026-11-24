@@ -1,4 +1,5 @@
 import type { Answer, GradedBy, SubmissionStatus, Verdict } from "@jaweb/shared";
+import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 // Classes scope liveness, rosters, monitors, and leaderboards (AGENTS §6).
@@ -98,6 +99,20 @@ export const exercises = sqliteTable(
   ],
 );
 
+export const providerSettings = sqliteTable("provider_settings", {
+  id: text("id").primaryKey(),
+  provider: text("provider", {
+    enum: ["google", "opencode", "openai", "anthropic", "openrouter", "ollama", "fake"],
+  }).notNull(),
+  model: text("model").notNull(),
+  apiKeyCiphertext: text("api_key_ciphertext"),
+  apiKeyLast4: text("api_key_last4"),
+  baseUrl: text("base_url"),
+  testedAt: text("tested_at"),
+  testOk: integer("test_ok", { mode: "boolean" }),
+  updatedAt: text("updated_at").notNull(),
+});
+
 export const participations = sqliteTable(
   "participations",
   {
@@ -139,10 +154,14 @@ export const submissions = sqliteTable(
     feedback: text("feedback"),
     gradedBy: text("graded_by", { enum: ["auto", "llm", "teacher"] }).$type<GradedBy>(),
     gradedAt: text("graded_at"),
+    points: integer("points"),
     flagged: integer("flagged", { mode: "boolean" }).notNull().default(false),
+    archivedAt: text("archived_at"),
   },
   (table) => [
-    uniqueIndex("submissions_question_student_idx").on(table.questionId, table.studentId),
+    uniqueIndex("submissions_question_student_idx")
+      .on(table.questionId, table.studentId)
+      .where(sql`archived_at IS NULL`),
     index("submissions_exercise_idx").on(table.exerciseId),
   ],
 );

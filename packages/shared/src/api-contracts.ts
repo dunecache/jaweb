@@ -3,10 +3,12 @@ import {
   answerSchema,
   exerciseTypeSchema,
   optionSchema,
+  providerNameSchema,
   roleSchema,
   safeExerciseSchema,
   studentSafeQuestionSchema,
   submissionDtoSchema,
+  verdictSchema,
   verdictVisibilitySchema,
 } from "./domain";
 
@@ -100,6 +102,38 @@ export const createStudentRequestSchema = z.object({
   classId: z.string().min(1).nullable().optional(),
 });
 export type CreateStudentRequest = z.infer<typeof createStudentRequestSchema>;
+
+export const overrideSubmissionRequestSchema = z.object({
+  score: z.number().min(0).max(1),
+  verdict: verdictSchema,
+  feedback: z.string().max(240),
+});
+export type OverrideSubmissionRequest = z.infer<typeof overrideSubmissionRequestSchema>;
+
+export const gradingSettingsSchema = z.object({
+  provider: providerNameSchema,
+  model: z.string().min(1),
+  apiKeyLast4: z.string().nullable(),
+  baseUrl: z.string().nullable(),
+  source: z.enum(["db", "env", "none"]),
+  testedAt: z.string().nullable(),
+  testOk: z.boolean().nullable(),
+});
+export type GradingSettings = z.infer<typeof gradingSettingsSchema>;
+
+export const patchGradingSettingsSchema = z.object({
+  provider: providerNameSchema,
+  model: z.string().min(1),
+  apiKey: z.string().min(1).optional(),
+  baseUrl: z.string().nullable().optional(),
+});
+export type PatchGradingSettings = z.infer<typeof patchGradingSettingsSchema>;
+
+export const gradingTestResultSchema = z.object({
+  ok: z.boolean(),
+  latencyMs: z.number().int(),
+  error: z.string().optional(),
+});
 
 export const createSubmissionRequestSchema = z.object({
   questionId: z.string().min(1),
