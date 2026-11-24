@@ -1,7 +1,7 @@
 import { type ExerciseDto, exerciseSchema } from "@jaweb/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 
 import { ConfirmButton } from "@/components/app/confirm-dialog";
 import { ErrorState, LoadingState } from "@/components/app/data-state";
@@ -117,6 +117,12 @@ export function ExerciseEditorPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link
+            to={`/teacher/exercises/${id}/monitor`}
+            className="rounded-button border border-hairline bg-surface px-3 py-2 text-sm"
+          >
+            Monitor
+          </Link>
           {current.status === "draft" || current.status === "scheduled" ? (
             <ConfirmButton
               variant="default"

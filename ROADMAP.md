@@ -197,10 +197,10 @@ The roadmap is shaped so multiple agents can work at once without coordinating i
 
 **Swarm:** A monitor API ∥ C CSV export + flags in parallel; B monitor UI after A's contract.
 
-- [ ] Monitor endpoint: roster × per-question status grid (not opened / opened / submitted / grading / graded / needs review / missing) + aggregate counts + median time
-- [ ] Participation tracking feeding "opened, not submitted"
-- [ ] Adaptive polling (5s → 10s when unchanged) with pause on `document.hidden`; drill-in to any student's submission (full data)
-- [ ] Flag list (sub-2s submissions); CSV export of grades (UTF-8 BOM for Excel)
+- [x] Monitor endpoint: roster × per-question status grid (not opened / opened / submitted / grading / graded / needs review / missing) + aggregate counts + median time
+- [x] Participation tracking feeding "opened, not submitted"
+- [x] Adaptive polling (5s → 10s when unchanged) with pause on `document.hidden`; drill-in to any student's submission (full data)
+- [x] Flag list (sub-2s submissions); CSV export of grades (UTF-8 BOM for Excel)
 
 **Acceptance:**
 

@@ -159,6 +159,51 @@ export const submissionDtoSchema = z.object({
 });
 export type SubmissionDto = z.infer<typeof submissionDtoSchema>;
 
+export const monitorCellSchema = z.enum([
+  "not_opened",
+  "opened",
+  "submitted",
+  "grading",
+  "graded",
+  "needs_review",
+]);
+export type MonitorCell = z.infer<typeof monitorCellSchema>;
+
+export const monitorRowSchema = z.object({
+  studentId: z.string().min(1),
+  username: z.string().min(1),
+  displayName: z.string().min(1),
+  cells: z.record(z.string(), monitorCellSchema),
+  lastSeenAt: z.string().nullable(),
+});
+export type MonitorRow = z.infer<typeof monitorRowSchema>;
+
+export const monitorSchema = z.object({
+  exerciseId: z.string().min(1),
+  questions: z.array(
+    z.object({ id: z.string().min(1), position: z.number().int(), prompt: z.string() }),
+  ),
+  roster: z.array(monitorRowSchema),
+  counts: z.object({
+    submitted: z.number().int(),
+    grading: z.number().int(),
+    needsReview: z.number().int(),
+    graded: z.number().int(),
+    missing: z.number().int(),
+  }),
+  medianSeconds: z.number().nullable(),
+  flagged: z.array(
+    z.object({
+      submissionId: z.string().min(1),
+      username: z.string().min(1),
+      questionId: z.string().min(1),
+      submittedAt: z.string(),
+    }),
+  ),
+  rev: z.string(),
+});
+export type Monitor = z.infer<typeof monitorSchema>;
+
 export const teacherSubmissionSchema = z.object({
   id: z.string().min(1),
   exerciseId: z.string().min(1),

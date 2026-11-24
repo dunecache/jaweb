@@ -17,6 +17,7 @@ import {
   patchExercise,
 } from "../../services/exercises";
 import { closeExercise, goLive } from "../../services/lifecycle";
+import { buildMonitor, exportRows, submissionsCsv } from "../../services/monitor";
 import { createQuestion, listQuestions, previewQuestions } from "../../services/questions";
 
 export const teacherExercisesRoutes = new Hono<AppEnv>();
@@ -65,6 +66,17 @@ teacherExercisesRoutes.post("/:id/close", async (c) => {
   const id = c.req.param("id");
   await closeExercise(id);
   return c.json(await getExercise(id));
+});
+
+teacherExercisesRoutes.get("/:id/monitor", async (c) =>
+  c.json(await buildMonitor(c.req.param("id"))),
+);
+
+teacherExercisesRoutes.get("/:id/export.csv", async (c) => {
+  const csv = submissionsCsv(await exportRows(c.req.param("id")));
+  c.header("content-type", "text/csv; charset=utf-8");
+  c.header("content-disposition", `attachment; filename="grades-${c.req.param("id")}.csv"`);
+  return c.body(csv);
 });
 
 teacherExercisesRoutes.get("/:id/preview", async (c) => {
