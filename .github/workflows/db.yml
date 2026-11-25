@@ -1,0 +1,32 @@
+name: Database migrate & seed
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate-seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.16.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply pending migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+      - name: Seed teacher and optional demo class
+        run: pnpm db:seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN }}
+          TEACHER_INITIAL_USERNAME: ${{ secrets.TEACHER_INITIAL_USERNAME }}
+          TEACHER_INITIAL_PASSWORD: ${{ secrets.TEACHER_INITIAL_PASSWORD }}
+          SEED_DEMO_CLASS: ${{ secrets.SEED_DEMO_CLASS }}
+          SETTINGS_ENC_KEY: ${{ secrets.SETTINGS_ENC_KEY }}
