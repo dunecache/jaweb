@@ -110,7 +110,7 @@ Placement rules:
 | `LLM_PROVIDER`                                          | `fake`                  | optional bootstrap                      | `google` / `opencode` / `openai` / `anthropic` / `openrouter` / `ollama`; a settings row saved via the Settings UI always wins over env (§9.0) |
 | `LLM_API_KEY`                                           | —                       | bootstrap only                          | key for the env-configured provider; production keys are saved encrypted via the Settings UI (§9.0), never logged                              |
 | `LLM_MODEL`                                             | —                       | set at deploy                           | a fast mid-tier model is sufficient                                                                                                            |
-| `OLLAMA_URL`                                            | —                       | if `ollama`                             | e.g. `http://localhost:11434` — local grading, no data leaves the machine                                                                      |
+| `OLLAMA_URL`                                            | —                       | —                                       | e.g. `http://localhost:11434` — local grading, no data leaves the machine; local dev only, Ollama is disabled on Vercel                       |
 | `SETTINGS_ENC_KEY`                                      | —                       | required once a key is saved via the UI | 32-byte base64 AES-256-GCM key-encryption key for stored provider API keys; missing → saving a key fails closed (§10.10)                       |
 | `COOKIE_SECURE`                                         | `auto`                  | `auto`                                  | `auto` = Secure iff HTTPS; `always` / `never` override for LAN HTTP deployments                                                                |
 | `TEACHER_INITIAL_USERNAME` / `TEACHER_INITIAL_PASSWORD` | set                     | set                                     | consumed once by `db:seed`                                                                                                                     |
@@ -175,7 +175,7 @@ Source of truth: `apps/api/src/db/schema.ts`. Nine tables.
 7. Timestamps: UTC ISO-8601 in DB and API; `datetime-local` schedule inputs convert to UTC on save; render in browser locale. Live payloads include `serverTime` for countdown sync.
 8. IDs are UUID text primary keys.
 9. Writes prefer single statements or `batch()`; `transaction()` is reserved for the per-class single-live guard and status flips.
-10. Production serves the SPA from the API origin (no CORS); dev uses the Vite proxy.
+10. Production serves the SPA and the API from one origin via Vercel services (`vercel.json`: `/api/*` → `api`, everything else → `web`), so no CORS is needed; `pnpm dev` uses the Vite proxy. The API entrypoint default-exports the Hono app for Vercel and does not serve the SPA itself.
 11. All free-text input and display uses `dir="auto"` (students answer in Arabic); layout uses logical CSS properties so RTL content does not break the UI.
 
 ## 8. API surface
@@ -222,7 +222,7 @@ Conventions: `{ "error": { "code": "...", "message": "...", "issues": [...] } }`
 | `opencode`                 | OpenAI-compatible gateway `https://opencode.ai/inference/openai/v1/` | cheapest small model in the current Console catalog (verify at setup) | pay-as-you-go credits, minimal prices                          |
 | `openai`                   | OpenAI API                                                           | `gpt-5-nano`, `gpt-5-mini`                                            | cheap per-call, needs a card                                   |
 | `anthropic` / `openrouter` | their APIs                                                           | smallest haiku / mini class                                           | optional; card access from Algeria is the known blocker        |
-| `ollama`                   | `OLLAMA_URL`                                                         | a small instruct model                                                | zero cost, zero cross-border transfer                          |
+| `ollama`                   | `OLLAMA_URL`                                                         | a small instruct model                                                | zero cost, zero cross-border transfer; local dev only, disabled on Vercel |
 | `fake`                     | —                                                                    | —                                                                     | tests only                                                     |
 
 Shared adapter contract: `grade(input) → GradeResult` and `test() → {ok, latencyMs, error?}`; temperature 0; the provider's native JSON mode (Gemini `responseMimeType`/`responseSchema`; OpenAI-compatible `response_format: json_object`); output zod-validated. Failure policy: 2 retries with backoff → `needs_review` with the error note; never auto-switch providers mid-flight; 5 consecutive failures raise a "grading degraded" banner in the monitor. Deterministic kinds never touch the provider — they stay instant even with no provider configured.
@@ -392,7 +392,7 @@ Dark mode tokens are defined but feature-flagged (Phase 7 optional): `#171613` b
 - Domain and trademark clearance for Jaweb (`jaweb.dz`, INAPI) before public launch; fallbacks on record: Sabora, Fhemti, Tebchour, Tahadi, Awal, Nabigh.
 - Deploy target and domain (default assumption: any Node host via Docker).
 - LLM provider, model, and monthly budget — chosen by the human in the Settings UI (selection is a product feature, not a deploy-time constant); recommended default `gemini-2.5-flash-lite` on a free AI Studio key; payment path from Algeria verified at setup; Ollama local privacy fallback.
-- Sign-off on the Law 18-07 data-protection posture (local grading by default vs cloud provider + ANPDP authorization).
+- Sign-off on the Law 18-07 data-protection posture (local grading by default vs cloud provider + ANPDP authorization). Vercel deployments disable Ollama, so they always use a cloud provider and require that authorization sign-off; keep local grading for self-hosted instances.
 - Changes to scoring defaults or weights policy (§9.5).
 - Adding roles, additional teachers, or self-signup (v1 fences; classes are already in v1).
 - Any exception to §10 (security invariants).

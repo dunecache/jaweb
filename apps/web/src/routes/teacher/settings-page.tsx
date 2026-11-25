@@ -54,6 +54,9 @@ export function SettingsPage() {
   }
   const current = settings.data;
   const activeProvider = provider;
+  const providers = current.ollamaAvailable
+    ? (["google", "opencode", "openai", "anthropic", "openrouter", "ollama", "fake"] as const)
+    : (["google", "opencode", "openai", "anthropic", "openrouter", "fake"] as const);
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -72,6 +75,11 @@ export function SettingsPage() {
       {current.source === "none" ? (
         <p className="rounded-card border border-warning/30 bg-warning/5 p-4 text-sm text-warning">
           No grader is configured. Typed answers will need review.
+        </p>
+      ) : null}
+      {!current.ollamaAvailable ? (
+        <p className="text-sm text-ink-muted">
+          Local grading with Ollama is not available in this deployment. Choose a cloud provider.
         </p>
       ) : null}
       {CLOUD.includes(activeProvider) ? (
@@ -93,13 +101,11 @@ export function SettingsPage() {
             value={provider}
             onChange={(event) => setProvider(event.target.value as ProviderName)}
           >
-            {["google", "opencode", "openai", "anthropic", "openrouter", "ollama", "fake"].map(
-              (name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ),
-            )}
+            {providers.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="flex flex-col gap-2">
@@ -133,7 +139,7 @@ export function SettingsPage() {
             id="base-url"
             value={baseUrl}
             onChange={(event) => setBaseUrl(event.target.value)}
-            placeholder="http://localhost:11434"
+            placeholder="https://api.example.com/v1"
           />
         </div>
         <div className="flex flex-wrap gap-3">

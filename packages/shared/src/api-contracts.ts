@@ -118,6 +118,7 @@ export const gradingSettingsSchema = z.object({
   apiKeyLast4: z.string().nullable(),
   baseUrl: z.string().nullable(),
   source: z.enum(["db", "env", "none"]),
+  ollamaAvailable: z.boolean(),
   testedAt: z.string().nullable(),
   testOk: z.boolean().nullable(),
 });

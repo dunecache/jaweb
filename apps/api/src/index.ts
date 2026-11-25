@@ -1,9 +1,6 @@
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import type { ErrorEnvelope } from "@jaweb/shared";
 import { Hono } from "hono";
 
@@ -52,15 +49,12 @@ app.route("/api/student/history", studentHistoryRoutes);
 app.route("/api/leaderboard", leaderboardRoutes);
 app.all("/api/*", (c) => c.json(notFoundBody, 404));
 
-// Production serves the built SPA from the API origin; dev uses the Vite proxy.
-const webDist = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
-if (env.NODE_ENV === "production" && existsSync(webDist)) {
-  app.use("/*", serveStatic({ root: webDist }));
-  app.get("/*", serveStatic({ root: webDist, path: "index.html" }));
-}
-
 app.notFound((c) => c.json(notFoundBody, 404));
 app.onError(errorHandler);
+
+// Vercel's Hono builder uses the default export as the function handler.
+// The SPA is served by the separate `web` service; dev uses the Vite proxy.
+export default app;
 
 export function startServer(): void {
   void recoverStaleGrading();

@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { providerSettings } from "../db/schema";
 import { env } from "../env";
+import { ValidationError } from "../lib/errors";
+import { ollamaAvailable } from "../lib/runtime";
 import { decryptApiKey, encryptApiKey, last4 } from "./key-crypto";
 import type { GradeProvider } from "./provider";
 import { fakeProvider } from "./providers/fake";
@@ -59,6 +61,7 @@ export async function maskedSettings(): Promise<GradingSettings> {
     apiKeyLast4: row?.apiKeyLast4 ?? null,
     baseUrl: resolved.baseUrl,
     source: resolved.source,
+    ollamaAvailable: ollamaAvailable(),
     testedAt: row?.testedAt ?? null,
     testOk: row?.testOk ?? null,
     leaderboardVisibility: row?.leaderboardVisibility ?? "top10_self",
@@ -66,6 +69,9 @@ export async function maskedSettings(): Promise<GradingSettings> {
 }
 
 export async function saveSettings(input: PatchGradingSettings): Promise<GradingSettings> {
+  if (input.provider === "ollama" && !ollamaAvailable()) {
+    throw new ValidationError("Local grading with Ollama is not available in this deployment");
+  }
   const existing = await db
     .select()
     .from(providerSettings)
@@ -115,6 +121,7 @@ export async function recordTest(ok: boolean): Promise<void> {
 }
 
 export function providerFrom(settings: ResolvedSettings): GradeProvider | null {
+  if (settings.provider === "ollama" && !ollamaAvailable()) return null;
   if (settings.provider === "fake") return fakeProvider;
   if (!settings.model) return null;
   if (settings.provider !== "ollama" && !settings.apiKey) return null;
