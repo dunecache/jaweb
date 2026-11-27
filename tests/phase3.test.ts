@@ -32,7 +32,9 @@ let incompleteExerciseId = "";
 let otherClassExerciseId = "";
 let choiceQuestionId = "";
 let freeQuestionId = "";
+let aliasQuestionId = "";
 let studentId = "";
+let secondStudentToken = "";
 
 async function request(path: string, init: RequestInit = {}, token?: string) {
   return app.request(path, {
@@ -86,6 +88,7 @@ function exerciseRow(
 beforeAll(async () => {
   await migrate(db, { migrationsFolder });
   const teacherId = newId();
+  const secondStudentId = newId();
   studentId = newId();
   classId = newId();
   otherClassId = newId();
@@ -117,7 +120,17 @@ beforeAll(async () => {
       classId,
       createdAt: nowIso(),
     },
+    {
+      id: secondStudentId,
+      username: "student-two",
+      displayName: "Student Two",
+      role: "student",
+      passwordHash: hash,
+      classId,
+      createdAt: nowIso(),
+    },
   ]);
+  secondStudentToken = await session(secondStudentId);
   teacherToken = await session(teacherId);
   studentToken = await session(studentId);
 
@@ -134,6 +147,7 @@ beforeAll(async () => {
 
   choiceQuestionId = newId();
   freeQuestionId = newId();
+  aliasQuestionId = newId();
   await db.insert(questions).values([
     {
       id: choiceQuestionId,
@@ -164,6 +178,21 @@ beforeAll(async () => {
       modelAnswer: "Algiers",
       keyPoints: ["Algiers"],
       aliases: ["alger", "الجزائر"],
+      points: 10,
+      partialCredit: false,
+      createdAt: nowIso(),
+    },
+    {
+      id: aliasQuestionId,
+      exerciseId,
+      position: 3,
+      prompt: "Capital of Algeria (alias)?",
+      kind: "free_text",
+      options: null,
+      correctOptionIds: null,
+      modelAnswer: "Algiers",
+      keyPoints: ["Algiers"],
+      aliases: ["الجزائر"],
       points: 10,
       partialCredit: false,
       createdAt: nowIso(),
@@ -335,8 +364,32 @@ describe("student loop", () => {
       },
       studentToken,
     );
-    expect(typed.status).toBe(202);
-    expect(await typed.json()).toMatchObject({ status: "grading" });
+    // LLM auto-grading is off: typed answers wait for teacher review.
+    expect(typed.status).toBe(201);
+    expect(await typed.json()).toMatchObject({ status: "needs_review" });
+  });
+
+  it("grades an exact normalized alias instantly without a provider", async () => {
+    const response = await request(
+      "/api/student/submissions",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          questionId: aliasQuestionId,
+          answer: { kind: "free_text", text: "  الجَزائِر  " },
+        }),
+      },
+      secondStudentToken,
+    );
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({
+      status: "graded",
+      score: 1,
+      verdict: "correct",
+      gradedBy: "auto",
+      feedback: "Accepted answer.",
+    });
   });
 
   it("guards student routes by role", async () => {

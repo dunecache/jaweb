@@ -10,6 +10,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../db/client";
 import { exercises, questions, submissions, users } from "../db/schema";
 import { NotFoundError, ValidationError } from "../lib/errors";
+import { revealSubmission } from "./reveal";
 
 async function mySubmissions(studentId: string) {
   return db
@@ -80,22 +81,31 @@ export async function historyDetail(studentId: string, exerciseId: string): Prom
     correctOptionIds: revealed ? question.correctOptionIds : null,
     modelAnswer: revealed ? question.modelAnswer : null,
   }));
-  const own = (await mySubmissions(studentId)).filter((item) => item.exerciseId === exerciseId);
+  const own = (await mySubmissions(studentId))
+    .filter((item) => item.exerciseId === exerciseId)
+    .map((item) =>
+      revealSubmission(
+        {
+          questionId: item.questionId,
+          answer: item.answer,
+          status: item.status,
+          submittedAt: item.submittedAt,
+          score: item.score,
+          verdict: item.verdict,
+          feedback: item.feedback,
+          gradedBy: item.gradedBy,
+          flagged: item.flagged,
+        },
+        exercise.status,
+        exercise.verdictVisibility,
+      ),
+    );
   const payload = {
     exerciseId,
     title: exercise.title,
     status: exercise.status,
     questions: questionPayload,
-    submissions: own.map((item) => ({
-      questionId: item.questionId,
-      status: item.status,
-      submittedAt: item.submittedAt,
-      score: item.score,
-      verdict: item.verdict,
-      feedback: item.feedback,
-      gradedBy: item.gradedBy,
-      flagged: item.flagged,
-    })),
+    submissions: own,
   };
   return historyDetailSchema.parse({ ...payload, rev: revOf(payload) });
 }

@@ -1,4 +1,11 @@
-import type { GradingSettings, PatchGradingSettings, ProviderName } from "@jaweb/shared";
+import {
+  type GradingSettings,
+  type GradingTestResult,
+  gradingTestResultSchema,
+  type PatchGradingSettings,
+  type ProviderName,
+  type TestGradingSettings,
+} from "@jaweb/shared";
 import { eq } from "drizzle-orm";
 
 import { db } from "../db/client";
@@ -118,6 +125,33 @@ export async function recordTest(ok: boolean): Promise<void> {
     .update(providerSettings)
     .set({ testedAt: new Date().toISOString(), testOk: ok })
     .where(eq(providerSettings.id, SETTINGS_ID));
+}
+
+// A provider switch invalidates the old key/base URL; they are provider-specific.
+async function resolvedFromDraft(input: TestGradingSettings): Promise<ResolvedSettings> {
+  const existing = await resolveSettings();
+  const sameProvider = input.provider === existing.provider;
+  return {
+    source: "db",
+    provider: input.provider,
+    model: input.model,
+    apiKey: input.apiKey ?? (sameProvider ? existing.apiKey : null),
+    baseUrl:
+      input.baseUrl === undefined
+        ? sameProvider
+          ? existing.baseUrl
+          : null
+        : input.baseUrl,
+  };
+}
+
+export async function testProvider(input?: TestGradingSettings): Promise<GradingTestResult> {
+  const resolved = input ? await resolvedFromDraft(input) : await resolveSettings();
+  const provider = providerFrom(resolved);
+  const result = provider
+    ? await provider.test()
+    : { ok: false, latencyMs: 0, error: "Grader not configured" };
+  return gradingTestResultSchema.parse(result);
 }
 
 export function providerFrom(settings: ResolvedSettings): GradeProvider | null {

@@ -120,6 +120,8 @@ Placement rules:
 
 Secrets only via env, never committed. `.env.example` stays up to date in the same PR as any env change. Note: there is no `SESSION_SECRET` — session tokens are 32 random bytes hashed in the DB; nothing signs them.
 
+Relative `file:` database URLs resolve against the repository root, and the API loads the repo-root `.env` regardless of cwd. Without this, `pnpm --filter @jaweb/api dev` (cwd `apps/api`) silently opens an empty `apps/api/local.db` while `pnpm db:migrate` (cwd repo root) migrates the real one. `pnpm db:seed` creates the teacher only once — changing `TEACHER_INITIAL_*` later does not update the existing row.
+
 **Billing and legal reality (Algeria):** grading is short-answer classification — flash-lite/nano-class models are the right tier, and the recommended order is (1) Google AI Studio key for `gemini-2.5-flash-lite` (free tier, no card — usually covers a classroom's daily volume), (2) OpenCode Console pay-as-you-go credits (OpenAI-compatible gateway, small models at minimal prices), (3) OpenAI `gpt-5-nano`/`gpt-5-mini` (cheap, needs a card). Verify the actual payable path from Algeria at setup — it is a human decision (§17). Ollama is the zero-cost, in-country privacy fallback. Sending student answers to a cloud LLM is a cross-border transfer of personal data (Law 18-07): the Settings UI shows that warning whenever a cloud provider is selected; the default-deploy path is local grading, or a documented ANPDP authorization. §10.9 keeps payloads PII-free either way.
 
 ## 6. Data model
@@ -263,19 +265,15 @@ OUTPUT: JSON only: {"score": 0|0.5|1, "verdict": "correct|partial|wrong",
 
 Local models (Ollama) are weaker at strict multilingual grading — expect a higher `needs_review` rate. Keep the confidence gate; do not lower it to make the board move faster.
 
-**9.5 Points formula.** For a question worth `P` points, with exercise weights `W_CORRECT`, `W_SPEED` and window `T` (seconds):
+**9.5 Points formula.** For a question worth `P` points:
 
 ```
-t              = submitted_at − started_at    (server clocks; the student's own first-view timestamp, §6)
-correctness_pts = P × W_CORRECT × score
-speed_factor    = score > 0 ? clamp(1 − t / T, 0, 1) : 0
-speed_pts       = P × W_SPEED × score × speed_factor
-total           = round(correctness_pts + speed_pts)
+total = round(P × score)
 ```
 
-Defaults: exercise 0.75 / 0.25, exam 0.90 / 0.10, T = 120s — all per-exercise editable. A fast wrong answer scores 0.
+Points reward correctness only — a correct answer always earns the question's full points, however long the student took. The legacy `weight_correct`, `weight_speed` and `speed_window_seconds` columns stay in the data model for compatibility (new exercises store 1 / 0) but are **not** used when applying points. A wrong answer scores 0; partial credit is proportional.
 
-Timing semantics (locked): the reference clock is the **student's own first view** — `t = submitted_at − started_at`, where `started_at` is the server timestamp written once when the live exercise payload first reached that student (§6). `T` is per exercise and starts for each student at their own anchor: a student who opens the exercise 10 minutes late still gets a full window, and nobody earns speed points on questions they never saw. Faster absolute time still wins the board and ties break by earlier last submission, so the race flavor survives without punishing late openers. `started_at` is first-write-wins — refreshing the page never resets it, so the anchor cannot be gamed. Submissions with `t < 2s` are auto-accepted but `flagged` (answered before reading). If lockstep question-by-question release ever ships (backlog), the anchor moves to a per-question `shown_at` and `T` becomes per-question — decision recorded here first.
+Timing semantics: the reference clock for monitoring is the **student's own first view** — `t = submitted_at − started_at`, where `started_at` is the server timestamp written once when the live exercise payload first reached that student (§6). `started_at` is first-write-wins — refreshing the page never resets it. Submissions with `t < 2s` are auto-accepted but `flagged` (answered before reading). Elapsed time is no longer part of the award; the leaderboard still breaks points ties by earlier last-submission time, so the race flavor survives without making a correct answer worth less than full points.
 
 **9.6 Leaderboard.** Ranking: total points desc, tie-break by earlier last-submission time, then username. Boards: current live exercise + all-time (closed and live), both scoped to a class — students see their class, the teacher can view any class. Points appear when grading completes — deterministic instantly, free-text on completion; pending rows show a "grading" indicator. Visibility modes (teacher setting): `full`, `top10_self` (default for students), `hidden`. Teachers always see `full`. While an exercise with `verdict_visibility='at_close'` is live, its board shows activity (submitted counts) only; points land at close.
 
@@ -297,34 +295,33 @@ Timing semantics (locked): the reference clock is the **student's own first view
 
 ## 11. Design system
 
-Clean and minimalist — the intersection of OpenAI (near-white surfaces, precise sans, quiet chrome) and Anthropic (warm paper tones, serif display headings, terracotta accent). Color is information, not decoration: it marks live / graded / partial / wrong states.
+Clean and minimalist — warm near-white surfaces, precise sans, quiet chrome, serif display headings, terracotta accent. Color is information, not decoration: it marks live / graded / partial / wrong states.
 
-**Palette (light):**
+**Palette (light, shadcn semantic tokens in OKLCH — source of truth: `theme.css`):**
 
-| Token          | Hex       | Use                                                     |
-| -------------- | --------- | ------------------------------------------------------- |
-| `paper`        | `#FAFAF7` | app background                                          |
-| `surface`      | `#FFFFFF` | cards, panels                                           |
-| `hairline`     | `#E9E7E1` | 1px borders (prefer over shadows)                       |
-| `ink`          | `#1D1C18` | primary text                                            |
-| `ink-muted`    | `#6E6A61` | secondary text                                          |
-| `accent`       | `#C96442` | terracotta — primary actions, live indicator, pulse dot |
-| `accent-press` | `#A94F2E` | hover/active                                            |
-| `success`      | `#2F7D5B` | correct                                                 |
-| `warning`      | `#B7791F` | partial / needs review                                  |
-| `danger`       | `#B3402F` | wrong, destructive                                      |
+| Token                | OKLCH                            | Approx. | Use                                                     |
+| -------------------- | -------------------------------- | ------- | ------------------------------------------------------- |
+| `background`         | `0.9818 0.0054 95.0986`          | #FAF9F5 | app background                                          |
+| `foreground`         | `0.3438 0.0269 95.7226`          | —       | primary text                                            |
+| `card`               | `0.9665 0.0067 97.3521`          | —       | cards, panels                                           |
+| `primary`            | `0.6171 0.1375 39.0427`          | #C96442 | terracotta — primary actions, live indicator, pulse dot |
+| `secondary`/`accent` | `0.9245 0.0138 92.9892`          | —       | quiet chrome, tints                                     |
+| `muted-foreground`   | `0.5341 0.0078 97.4503`          | —       | secondary text                                          |
+| `border`             | `0.8847 0.0069 97.3627`          | —       | 1px borders (prefer over shadows)                       |
+| `ring`               | `= primary`                      | #C96442 | focus rings                                             |
+| `destructive`        | `0.1908 0.0020 106.5859`         | near-black | wrong, destructive (red in dark)                     |
 
-Dark mode tokens are defined but feature-flagged (Phase 7 optional): `#171613` bg, `#201E1A` surface, `#34312B` hairline, `#EDEBE4` ink, `#D97B57` accent.
+`chart-1..5`, `sidebar-*`, and the subtle `shadow-*` scale are defined in `theme.css` for data views and panels. Dark mode is a full token set under `.dark` (`@custom-variant dark`); activation is still a Phase 7 UI decision — no toggle ships in v1.
 
 **Typography** — self-hosted via @fontsource (no external font CDN):
 
-- Display/headings: Source Serif 4 (editorial serif).
-- Body/UI: Inter.
-- Mono (answers, timings): JetBrains Mono.
+- Body/UI: Outfit (`--font-sans`).
+- Display/headings: system serif stack — `ui-serif, Georgia, Cambria, "Times New Roman", Times, serif` (`--font-serif`).
+- Mono (answers, timings): Geist Mono (`--font-mono`).
 
-**Density & shape:** 4px spacing grid; section gap 32px, card padding 24px; radius 12px cards/modals, 8px buttons, 6px inputs/badges; shadows only for modals (`0 8px 24px rgb(0 0 0 / 0.08)`); motion 150–200ms ease-out; `prefers-reduced-motion` always honored (live pulse dot included).
+**Density & shape:** 4px spacing grid (`--spacing: 0.25rem`); `--radius: 1rem` (sm 12px / md 14px / lg 16px / xl 20px); hairline borders and quiet 1px/3px shadows instead of heavy elevation; `--tracking-normal: 0em`; motion 150–200ms ease-out; `prefers-reduced-motion` always honored (live pulse dot included).
 
-**shadcn/ui:** map the tokens above onto shadcn CSS variables in `apps/web/src/styles/theme.css` (Tailwind 4 `@theme`). Never restyle primitives ad hoc; compose them.
+**shadcn/ui:** map the tokens above onto shadcn CSS variables in `apps/web/src/styles/theme.css` (Tailwind 4 `@theme inline`). Never restyle primitives ad hoc; compose them. Note: `--color-accent` is the quiet neutral tint, **not** terracotta — brand/live state is `--primary` (`bg-primary`, `text-primary`, `border-s-primary`).
 
 **Layout:** content max-width 1200px (dashboards) / 720px (student answering, reading). Icons: lucide, 16px inline. Live state = accent color + pulsing dot.
 

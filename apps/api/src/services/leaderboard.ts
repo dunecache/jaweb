@@ -36,6 +36,15 @@ export async function buildLeaderboard(input: {
       .where(and(eq(exercises.classId, input.classId), eq(exercises.status, "live")))
       .get();
     exerciseId = live?.id;
+    if (!exerciseId) {
+      // Without this guard the unfiltered submissions query would present an
+      // all-time ranking as the "live" board (AGENTS §9.6).
+      const empty = { scope: input.scope, activityOnly: false, visibility, entries: [] };
+      return leaderboardSchema.parse({
+        ...empty,
+        rev: createHash("sha256").update(JSON.stringify(empty)).digest("hex").slice(0, 12),
+      });
+    }
   }
   const exercise = exerciseId
     ? await db.select().from(exercises).where(eq(exercises.id, exerciseId)).get()

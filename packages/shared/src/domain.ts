@@ -149,6 +149,8 @@ export type SafeExercise = z.infer<typeof safeExerciseSchema>;
 
 export const submissionDtoSchema = z.object({
   questionId: z.string().min(1),
+  // The student's own answer is safe to echo back; the answer key never is.
+  answer: answerSchema.nullable(),
   status: submissionStatusSchema,
   submittedAt: z.string(),
   score: z.number().min(0).max(1).nullable(),
@@ -265,11 +267,19 @@ export const monitorSchema = z.object({
 });
 export type Monitor = z.infer<typeof monitorSchema>;
 
+// Teacher review needs enough context to decide without opening another screen:
+// who answered, which question, and in which exercise (§9.3 review queue).
 export const teacherSubmissionSchema = z.object({
   id: z.string().min(1),
   exerciseId: z.string().min(1),
   questionId: z.string().min(1),
   studentId: z.string().min(1),
+  exerciseStatus: exerciseStatusSchema,
+  exerciseTitle: z.string(),
+  questionPrompt: z.string(),
+  questionPoints: z.number().int(),
+  studentUsername: z.string(),
+  studentDisplayName: z.string(),
   answer: answerSchema.nullable(),
   submittedAt: z.string(),
   status: submissionStatusSchema,

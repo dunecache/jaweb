@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 
+import { PasswordInput } from "@/components/app/password-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function ResetPasswordDialog({ onReset }: { onReset: (password: string) => void }) {
@@ -31,16 +31,15 @@ export function ResetPasswordDialog({ onReset }: { onReset: (password: string) =
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display">Reset password</DialogTitle>
+            <DialogTitle className="font-serif">Reset password</DialogTitle>
             <DialogDescription>
               The student's current session will be signed out. Share the new password with them.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Label htmlFor={id}>New password</Label>
-            <Input
+            <PasswordInput
               id={id}
-              type="password"
               minLength={8}
               value={password}
               onChange={(event) => setPassword(event.target.value)}

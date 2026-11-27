@@ -1,13 +1,18 @@
-import { gradingTestResultSchema, patchGradingSettingsSchema } from "@jaweb/shared";
+import {
+  gradingTestResultSchema,
+  patchGradingSettingsSchema,
+  type TestGradingSettings,
+  testGradingSettingsSchema,
+} from "@jaweb/shared";
 import { Hono } from "hono";
 import {
   maskedSettings,
-  providerFrom,
   recordTest,
-  resolveSettings,
   saveSettings,
+  testProvider,
 } from "../../grading/provider-settings";
 import type { AppEnv } from "../../lib/app-types";
+import { ValidationError } from "../../lib/errors";
 import { parseJson } from "../../lib/parse";
 import { requireAuth, requireRole } from "../../middleware/auth";
 
@@ -23,10 +28,15 @@ teacherSettingsRoutes.patch("/", async (c) => {
 });
 
 teacherSettingsRoutes.post("/test", async (c) => {
-  const provider = providerFrom(await resolveSettings());
-  const result = provider
-    ? await provider.test()
-    : { ok: false, latencyMs: 0, error: "Grader not configured" };
-  await recordTest(result.ok);
+  const raw: unknown = await c.req.json().catch(() => undefined);
+  let draft: TestGradingSettings | undefined;
+  if (raw !== undefined) {
+    const parsed = testGradingSettingsSchema.safeParse(raw);
+    if (!parsed.success) throw new ValidationError("Invalid request");
+    draft = parsed.data;
+  }
+  const result = await testProvider(draft);
+  // Only a saved configuration gets a recorded test timestamp.
+  if (!draft) await recordTest(result.ok);
   return c.json(gradingTestResultSchema.parse(result));
 });

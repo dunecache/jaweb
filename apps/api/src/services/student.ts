@@ -1,10 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  type StudentCurrent,
-  type SubmissionDto,
-  safeExerciseSchema,
-  studentSafeQuestion,
-} from "@jaweb/shared";
+import { type StudentCurrent, safeExerciseSchema, studentSafeQuestion } from "@jaweb/shared";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../db/client";
@@ -13,19 +8,19 @@ import { nowIso } from "../lib/time";
 import { syncLifecycle } from "./lifecycle";
 import { touchParticipation } from "./participations";
 import { listQuestions } from "./questions";
+import { revealSubmission } from "./reveal";
 import { mySubmissions } from "./submissions";
 
 function revOf(payload: Omit<StudentCurrent, "rev">): string {
-  return createHash("sha256").update(JSON.stringify(payload)).digest("hex").slice(0, 12);
-}
-
-function reveal(row: SubmissionDto, exerciseStatus: string, visibility: string): SubmissionDto {
-  if (exerciseStatus === "closed") return row;
-  return {
-    ...row,
-    feedback: null,
-    ...(visibility === "at_close" ? { score: null, verdict: null } : {}),
+  // serverTime changes on every request; hashing it would defeat polling backoff
+  // and ETag matching. Hash only the state that can actually change.
+  const stable = {
+    exercise: payload.exercise,
+    questions: payload.questions,
+    submissions: payload.submissions,
+    closesAt: payload.closesAt,
   };
+  return createHash("sha256").update(JSON.stringify(stable)).digest("hex").slice(0, 12);
 }
 
 export async function currentForStudent(studentId: string): Promise<StudentCurrent> {
@@ -59,7 +54,9 @@ export async function currentForStudent(studentId: string): Promise<StudentCurre
   await touchParticipation(exercise.id, studentId);
   const questions = (await listQuestions(exercise.id)).map(studentSafeQuestion);
   const own = await mySubmissions(exercise.id, studentId);
-  const submissions = own.map((row) => reveal(row, exercise.status, exercise.verdictVisibility));
+  const submissions = own.map((row) =>
+    revealSubmission(row, exercise.status, exercise.verdictVisibility),
+  );
   const safeExercise = safeExerciseSchema.parse({
     id: exercise.id,
     title: exercise.title,

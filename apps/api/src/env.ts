@@ -1,7 +1,15 @@
-import "dotenv/config";
+import { resolve } from "node:path";
 
 import { providerNameSchema } from "@jaweb/shared";
+import { config } from "dotenv";
 import { z } from "zod";
+
+import { repoRoot } from "./lib/paths";
+
+// `pnpm --filter` starts the API with cwd=apps/api, where no .env lives. Load
+// the repo-root file too so dev and the db:* scripts share one configuration.
+config();
+config({ path: resolve(repoRoot, ".env") });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),

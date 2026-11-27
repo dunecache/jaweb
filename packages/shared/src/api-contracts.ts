@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   answerSchema,
+  deriveVerdict,
   exerciseTypeSchema,
   leaderboardVisibilitySchema,
   optionSchema,
@@ -70,18 +71,25 @@ export type ClassDto = z.infer<typeof classSchema>;
 
 export const createClassRequestSchema = z.object({
   name: z.string().min(1).max(80),
-  position: z.number().int().optional(),
+  position: z.number().int().positive().optional(),
 });
 export type CreateClassRequest = z.infer<typeof createClassRequestSchema>;
 
+// Archive-only delete: `false` is rejected rather than silently ignored (§6).
 export const patchClassRequestSchema = z
   .object({
     name: z.string().min(1).max(80).optional(),
-    position: z.number().int().optional(),
-    archived: z.boolean().optional(),
+    position: z.number().int().positive().optional(),
+    archived: z.literal(true).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, "At least one field is required");
 export type PatchClassRequest = z.infer<typeof patchClassRequestSchema>;
+
+export const reorderClassesRequestSchema = z.object({
+  // Must contain every active class id exactly once; positions become 1..n.
+  ids: z.array(z.string().min(1)).min(1),
+});
+export type ReorderClassesRequest = z.infer<typeof reorderClassesRequestSchema>;
 
 export const studentSchema = z.object({
   id: z.string().min(1),
@@ -104,17 +112,25 @@ export const createStudentRequestSchema = z.object({
 });
 export type CreateStudentRequest = z.infer<typeof createStudentRequestSchema>;
 
-export const overrideSubmissionRequestSchema = z.object({
-  score: z.number().min(0).max(1),
-  verdict: verdictSchema,
-  feedback: z.string().max(240),
-});
+// §9.1: verdict is derived from score, never chosen independently — enforced
+// at the boundary so every client (and the service) stays consistent.
+export const overrideSubmissionRequestSchema = z
+  .object({
+    score: z.number().min(0).max(1),
+    verdict: verdictSchema,
+    feedback: z.string().max(240),
+  })
+  .refine((input) => deriveVerdict(input.score) === input.verdict, {
+    message: "Verdict must match the score",
+    path: ["verdict"],
+  });
 export type OverrideSubmissionRequest = z.infer<typeof overrideSubmissionRequestSchema>;
 
 export const gradingSettingsSchema = z.object({
   leaderboardVisibility: leaderboardVisibilitySchema,
   provider: providerNameSchema,
-  model: z.string().min(1),
+  // An env bootstrap with no LLM_MODEL legitimately reports an empty model.
+  model: z.string(),
   apiKeyLast4: z.string().nullable(),
   baseUrl: z.string().nullable(),
   source: z.enum(["db", "env", "none"]),
@@ -127,7 +143,8 @@ export type GradingSettings = z.infer<typeof gradingSettingsSchema>;
 export const patchGradingSettingsSchema = z.object({
   leaderboardVisibility: leaderboardVisibilitySchema.optional(),
   provider: providerNameSchema,
-  model: z.string().min(1),
+  // `fake` and an unconfigured env need no model name.
+  model: z.string(),
   apiKey: z.string().min(1).optional(),
   baseUrl: z.string().nullable().optional(),
 });
@@ -138,11 +155,33 @@ export const gradingTestResultSchema = z.object({
   latencyMs: z.number().int(),
   error: z.string().optional(),
 });
+export type GradingTestResult = z.infer<typeof gradingTestResultSchema>;
 
-export const createSubmissionRequestSchema = z.object({
-  questionId: z.string().min(1),
-  answer: answerSchema,
+// A test can target unsaved values so the teacher can verify before saving.
+export const testGradingSettingsSchema = z.object({
+  provider: providerNameSchema,
+  model: z.string(),
+  apiKey: z.string().min(1).optional(),
+  baseUrl: z.string().nullable().optional(),
 });
+export type TestGradingSettings = z.infer<typeof testGradingSettingsSchema>;
+
+export const createSubmissionRequestSchema = z
+  .object({
+    questionId: z.string().min(1),
+    answer: answerSchema,
+  })
+  .superRefine((input, ctx) => {
+    // Only the request boundary rejects blank typed answers; answerSchema stays
+    // permissive so stored answers still parse.
+    if (input.answer.kind === "free_text" && input.answer.text.trim().length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Type an answer before submitting.",
+        path: ["answer", "text"],
+      });
+    }
+  });
 export type CreateSubmissionRequest = z.infer<typeof createSubmissionRequestSchema>;
 
 export const studentCurrentSchema = z.object({

@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -276,6 +277,21 @@ describe("leaderboard", () => {
   it("guards the leaderboard by role", async () => {
     expect((await app.request("/api/leaderboard")).status).toBe(401);
   });
+
+  it("returns an empty board when scope=live has no live exercise", async () => {
+    await db.update(exercises).set({ status: "closed" }).where(eq(exercises.id, liveExamId));
+    try {
+      const response = await app.request("/api/leaderboard?scope=live", {
+        headers: { cookie: `${SESSION_COOKIE}=${studentToken}` },
+      });
+      expect(response.status).toBe(200);
+      const board = (await response.json()) as { scope: string; entries: unknown[] };
+      expect(board.scope).toBe("live");
+      expect(board.entries).toHaveLength(0);
+    } finally {
+      await db.update(exercises).set({ status: "live" }).where(eq(exercises.id, liveExamId));
+    }
+  });
 });
 
 describe("student history", () => {
@@ -306,6 +322,54 @@ describe("student history", () => {
     };
     expect(liveBody.questions[0]?.revealed).toBe(false);
     expect(liveBody.questions[0]?.modelAnswer).toBeNull();
+  });
+
+  it("withholds score, verdict and feedback for a live at_close exercise", async () => {
+    const examQuestion = await db
+      .select()
+      .from(questions)
+      .where(eq(questions.exerciseId, liveExamId))
+      .get();
+    if (!examQuestion) throw new Error("Exam question fixture missing");
+    const submissionId = newId();
+    await db.insert(submissions).values({
+      id: submissionId,
+      exerciseId: liveExamId,
+      questionId: examQuestion.id,
+      studentId,
+      answer: { kind: "free_text", text: "secret" },
+      submittedAt: nowIso(),
+      status: "graded",
+      score: 1,
+      verdict: "correct",
+      feedback: "Secret feedback",
+      gradedBy: "teacher",
+      gradedAt: nowIso(),
+      points: 10,
+      flagged: false,
+      archivedAt: null,
+    });
+    try {
+      const response = await app.request(`/api/student/history/${liveExamId}`, {
+        headers: { cookie: `${SESSION_COOKIE}=${studentToken}` },
+      });
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        submissions: Array<{
+          score: number | null;
+          verdict: string | null;
+          feedback: string | null;
+        }>;
+      };
+      expect(body.submissions.length).toBeGreaterThan(0);
+      expect(
+        body.submissions.every(
+          (item) => item.score === null && item.verdict === null && item.feedback === null,
+        ),
+      ).toBe(true);
+    } finally {
+      await db.delete(submissions).where(eq(submissions.id, submissionId));
+    }
   });
 
   it("guards history by role", async () => {

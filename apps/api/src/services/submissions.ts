@@ -1,5 +1,6 @@
 import {
   type Answer,
+  aliasesMatch,
   type ExerciseDto,
   type QuestionDto,
   type SubmissionDto,
@@ -9,7 +10,6 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "../db/client";
 import { submissions } from "../db/schema";
-import { enqueueGrading } from "../grading/queue";
 import { ConflictError } from "../lib/errors";
 import { newId } from "../lib/ids";
 import { nowIso } from "../lib/time";
@@ -21,10 +21,10 @@ export async function createSubmission(input: {
   question: QuestionDto;
   studentId: string;
   answer: Answer;
-}): Promise<{ status: 201 | 202; submission: SubmissionDto }> {
+}): Promise<{ status: 201; submission: SubmissionDto }> {
   const { exercise, question, studentId, answer } = input;
   const existing = await db
-    .select({ id: submissions.id })
+    .select()
     .from(submissions)
     .where(
       and(
@@ -34,38 +34,59 @@ export async function createSubmission(input: {
       ),
     )
     .get();
-  if (existing) throw new ConflictError("You have already submitted this question");
+  // A teacher unlock leaves a reserved retake slot (answer=null, status=grading).
+  // Fill that row instead of inserting a conflicting one — the partial unique
+  // index on (question, student) would otherwise turn every retake into a 409.
+  if (existing && (existing.answer !== null || existing.status !== "grading")) {
+    throw new ConflictError("You have already submitted this question");
+  }
 
   const participation =
     (await getParticipation(exercise.id, studentId)) ??
     (await touchParticipation(exercise.id, studentId));
   const submittedAt = nowIso();
   const flagged = Date.parse(submittedAt) - Date.parse(participation.startedAt) < 2_000;
-  const score = gradeObjective(question, answer);
+  // §9.3: a normalized alias match is an automatic correct answer even with no
+  // LLM provider configured — it must not fall through to the review queue.
+  const aliasMatch =
+    answer.kind === "free_text" && aliasesMatch(answer.text, question.aliases ?? []);
+  const score = gradeObjective(question, answer) ?? (aliasMatch ? 1 : null);
+  // LLM grading is disabled for now: other typed answers wait for a teacher
+  // override instead of entering the background queue (§9.3 review path).
+  const needsReview = score === null;
 
   const row = {
-    id: newId(),
+    id: existing?.id ?? newId(),
     exerciseId: exercise.id,
     questionId: question.id,
     studentId,
     answer,
     submittedAt,
-    status: score === null ? ("grading" as const) : ("graded" as const),
+    status: needsReview ? ("needs_review" as const) : ("graded" as const),
     score,
-    verdict: score === null ? null : verdictFor(score),
-    feedback: null,
-    gradedBy: score === null ? null : ("auto" as const),
-    gradedAt: score === null ? null : submittedAt,
+    verdict: needsReview ? null : verdictFor(score),
+    feedback: needsReview
+      ? "Pending teacher review — automatic grading is off."
+      : aliasMatch
+        ? "Accepted answer."
+        : null,
+    gradedBy: needsReview ? null : ("auto" as const),
+    gradedAt: needsReview ? null : submittedAt,
     flagged,
   };
-  await db.insert(submissions).values(row);
-  if (score === null) enqueueGrading(row.id);
-  else await applyPoints(row.id);
+  if (existing) {
+    const { id, ...values } = row;
+    await db.update(submissions).set(values).where(eq(submissions.id, id));
+  } else {
+    await db.insert(submissions).values(row);
+  }
+  if (!needsReview) await applyPoints(row.id);
 
   return {
-    status: score === null ? 202 : 201,
+    status: 201,
     submission: submissionDtoSchema.parse({
       questionId: question.id,
+      answer: row.answer,
       status: row.status,
       submittedAt: row.submittedAt,
       score: row.score,
@@ -81,6 +102,7 @@ export async function mySubmissions(exerciseId: string, studentId: string) {
   const rows = await db
     .select({
       questionId: submissions.questionId,
+      answer: submissions.answer,
       status: submissions.status,
       submittedAt: submissions.submittedAt,
       score: submissions.score,

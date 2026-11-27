@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -29,6 +29,10 @@ import { newId } from "../apps/api/src/lib/ids";
 import { hashToken, newSessionToken, SESSION_COOKIE } from "../apps/api/src/lib/session";
 import { nowIso } from "../apps/api/src/lib/time";
 import { gradeSubmissionById } from "../apps/api/src/services/grading";
+import {
+  gradingSettingsSchema,
+  overrideSubmissionRequestSchema,
+} from "../packages/shared/src/api-contracts";
 
 const migrationsFolder = resolve(process.cwd(), "apps/api/src/db/migrations");
 let token = "";
@@ -233,6 +237,46 @@ describe("provider settings", () => {
     expect(JSON.stringify(await response.json())).not.toContain("sk-super-secret-1234");
   });
 
+  it("parses an unconfigured payload whose model is empty", () => {
+    expect(
+      gradingSettingsSchema.safeParse({
+        provider: "fake",
+        model: "",
+        apiKeyLast4: null,
+        baseUrl: null,
+        source: "env",
+        ollamaAvailable: true,
+        testedAt: null,
+        testOk: null,
+        leaderboardVisibility: "top10_self",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("tests a draft provider without saving or recording the test", async () => {
+    await saveSettings({ provider: "google", model: "gemini-2.5-flash-lite" });
+    const before = await db
+      .select()
+      .from(providerSettings)
+      .where(eq(providerSettings.id, "grading"))
+      .get();
+    const response = await request("/api/teacher/settings/grading/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ provider: "fake", model: "" }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ ok: true });
+    const after = await db
+      .select()
+      .from(providerSettings)
+      .where(eq(providerSettings.id, "grading"))
+      .get();
+    expect(after?.provider).toBe(before?.provider);
+    expect(after?.model).toBe(before?.model);
+    expect(after?.testedAt).toBe(before?.testedAt);
+  });
+
   it("fails closed when SETTINGS_ENC_KEY is missing", async () => {
     const previous = env.SETTINGS_ENC_KEY;
     env.SETTINGS_ENC_KEY = undefined;
@@ -248,10 +292,156 @@ describe("review routes", () => {
     const cases = [
       { method: "GET", path: "/api/teacher/settings/grading" },
       { method: "GET", path: "/api/teacher/submissions" },
+      { method: "GET", path: "/api/teacher/submissions?studentId=any" },
+      { method: "POST", path: "/api/teacher/submissions/any-id/unlock" },
     ];
     for (const testCase of cases) {
       const response = await app.request(testCase.path, { method: testCase.method });
       expect(response.status).toBe(401);
     }
+  });
+
+  it("rejects a verdict that disagrees with the score (§9.1)", () => {
+    expect(
+      overrideSubmissionRequestSchema.safeParse({
+        score: 1,
+        verdict: "wrong",
+        feedback: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      overrideSubmissionRequestSchema.safeParse({
+        score: 0.5,
+        verdict: "partial",
+        feedback: "",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("exposes review context and derives the verdict on override", async () => {
+    const id = await insertSubmission("a paraphrase");
+    queueFakeResponses({
+      score: 0,
+      verdict: "wrong",
+      confidence: 0.3,
+      feedback: "Check the key idea.",
+    });
+    await gradeSubmissionById(id);
+
+    const listed = await request("/api/teacher/submissions");
+    expect(listed.status).toBe(200);
+    const rows = (await listed.json()) as Array<Record<string, unknown>>;
+    const row = rows.find((item) => item.id === id);
+    expect(row).toMatchObject({
+      exerciseTitle: "Grading",
+      exerciseStatus: "live",
+      questionPrompt: "Capital of Algeria?",
+      questionPoints: 10,
+      studentUsername: "sensitive-student",
+      studentDisplayName: "Sensitive Name",
+      status: "needs_review",
+    });
+
+    const byStudent = await request(`/api/teacher/submissions?studentId=${studentId}`);
+    expect(byStudent.status).toBe(200);
+    const studentRows = (await byStudent.json()) as Array<{ id: string }>;
+    expect(studentRows.map((item) => item.id)).toContain(id);
+    const noStudent = await request("/api/teacher/submissions?studentId=does-not-exist");
+    expect(await noStudent.json()).toEqual([]);
+
+    const override = await request(`/api/teacher/submissions/${id}/override`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ score: 0.5, verdict: "partial", feedback: "Half right." }),
+    });
+    expect(override.status).toBe(200);
+    expect(await override.json()).toMatchObject({
+      score: 0.5,
+      verdict: "partial",
+      gradedBy: "teacher",
+    });
+  });
+
+  it("refuses to override a submission while it is still grading", async () => {
+    const id = await insertSubmission("in flight");
+    const response = await request(`/api/teacher/submissions/${id}/override`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ score: 0, verdict: "wrong", feedback: "" }),
+    });
+    expect(response.status).toBe(409);
+  });
+
+  it("sends typed submissions to review without calling the LLM", async () => {
+    const before = fakeCalls();
+    const studentToken = newSessionToken();
+    await db.insert(sessions).values({
+      id: newId(),
+      userId: studentId,
+      tokenHash: hashToken(studentToken),
+      expiresAt: "2999-01-01T00:00:00.000Z",
+      createdAt: nowIso(),
+      lastUsedAt: nowIso(),
+    });
+    const response = await app.request("/api/student/submissions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: `${SESSION_COOKIE}=${studentToken}`,
+      },
+      body: JSON.stringify({
+        questionId,
+        answer: { kind: "free_text", text: "a typed answer" },
+      }),
+    });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({ status: "needs_review", score: null });
+    expect(fakeCalls()).toBe(before);
+    const row = await db
+      .select()
+      .from(submissions)
+      .where(and(eq(submissions.questionId, questionId), eq(submissions.studentId, studentId)))
+      .get();
+    expect(row?.status).toBe("needs_review");
+  });
+
+  it("lets a student retake after the teacher unlocks a submission", async () => {
+    const originalId = await insertSubmission("first attempt");
+    const unlocked = await request(`/api/teacher/submissions/${originalId}/unlock`, {
+      method: "POST",
+    });
+    expect(unlocked.status).toBe(200);
+
+    const studentToken = newSessionToken();
+    await db.insert(sessions).values({
+      id: newId(),
+      userId: studentId,
+      tokenHash: hashToken(studentToken),
+      expiresAt: "2999-01-01T00:00:00.000Z",
+      createdAt: nowIso(),
+      lastUsedAt: nowIso(),
+    });
+
+    const retake = await app.request("/api/student/submissions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: `${SESSION_COOKIE}=${studentToken}`,
+      },
+      body: JSON.stringify({
+        questionId,
+        answer: { kind: "free_text", text: "second attempt" },
+      }),
+    });
+    expect(retake.status).toBe(201);
+
+    const rows = await db
+      .select()
+      .from(submissions)
+      .where(and(eq(submissions.questionId, questionId), eq(submissions.studentId, studentId)));
+    expect(rows).toHaveLength(2);
+    const active = rows.filter((row) => row.archivedAt === null);
+    expect(active).toHaveLength(1);
+    expect(active[0]?.answer).toEqual({ kind: "free_text", text: "second attempt" });
   });
 });

@@ -12,6 +12,9 @@
   §11 palette via `@theme inline`.
 - `drizzle-orm` at the workspace root — dev-only, so integration tests can call the
   migrator directly. The API owns the runtime copy.
+- `@fontsource/outfit` + `@fontsource/geist-mono` — self-hosted fonts required by the
+  new §11 typography (Outfit UI, Geist Mono answers/timings); they replace
+  Inter / JetBrains Mono / Source Serif 4 with no external font CDN.
 
 ## Env change
 

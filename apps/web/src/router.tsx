@@ -52,7 +52,7 @@ const SettingsPage = lazy(() =>
 
 function GuardLoading() {
   return (
-    <div className="mx-auto max-w-[720px] p-8" role="status" aria-label="Checking session">
+    <div className="mx-auto max-w-[720px] p-8">
       <LoadingState label="Checking session" />
     </div>
   );

@@ -32,6 +32,10 @@ export function MonitorPage() {
     10_000,
   );
 
+  // Deep links carry the two filters the review queue understands: student + exercise.
+  const reviewHref = (studentId: string) =>
+    `/teacher/review?${new URLSearchParams({ studentId, exerciseId: id }).toString()}`;
+
   if (exercise.isPending || monitor.isPending) return <LoadingState label="Loading monitor" />;
   if (exercise.isError || monitor.isError) {
     return (
@@ -44,16 +48,16 @@ export function MonitorPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold text-ink">Live monitor</h1>
-          <p className="mt-2 text-sm text-ink-muted">{exercise.data?.title}</p>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">Live monitor</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{exercise.data?.title}</p>
         </div>
         <div className="flex gap-3">
-          <Link to={`/teacher/exercises/${id}`} className="text-sm text-accent hover:underline">
+          <Link to={`/teacher/exercises/${id}`} className="text-sm text-primary hover:underline">
             Edit exercise
           </Link>
           <a
             href={`/api/teacher/exercises/${id}/export.csv`}
-            className="rounded-button border border-hairline bg-surface px-3 py-2 text-sm"
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
           >
             Export CSV
           </a>
@@ -69,17 +73,19 @@ export function MonitorPage() {
           ["Missing", data.counts.missing],
           ["Median (s)", data.medianSeconds ?? "—"],
         ].map(([label, value]) => (
-          <div key={String(label)} className="rounded-card border border-hairline bg-surface p-4">
-            <p className="text-xs text-ink-muted">{label}</p>
-            <p className="font-mono text-xl text-ink">{value}</p>
+          <div key={String(label)} className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="font-mono text-xl text-foreground">{value}</p>
           </div>
         ))}
       </div>
 
       {data.flagged.length ? (
-        <div className="rounded-card border border-danger/30 bg-danger/5 p-4 text-sm">
-          <p className="font-medium text-danger">{data.flagged.length} answered before reading</p>
-          <ul className="mt-2 list-disc pl-5 text-ink-muted">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+          <p className="font-medium text-destructive">
+            {data.flagged.length} answered before reading
+          </p>
+          <ul className="mt-2 list-disc ps-5 text-muted-foreground">
             {data.flagged.map((item) => (
               <li key={item.submissionId}>
                 {item.username} · {item.questionId} · {item.submittedAt}
@@ -92,7 +98,7 @@ export function MonitorPage() {
       {data.roster.length === 0 ? (
         <EmptyState message="No students in this class yet." />
       ) : (
-        <div className="overflow-x-auto rounded-card border border-hairline bg-surface">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -106,26 +112,45 @@ export function MonitorPage() {
               {data.roster.map((row) => (
                 <TableRow key={row.studentId}>
                   <TableCell className="font-medium">
-                    <span dir="auto">{row.displayName}</span>
-                    <span className="ml-2 font-mono text-xs text-ink-muted">{row.username}</span>
+                    <Link
+                      to={reviewHref(row.studentId)}
+                      className="rounded-md hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span dir="auto">{row.displayName}</span>
+                      <span className="ms-2 font-mono text-xs text-muted-foreground">
+                        {row.username}
+                      </span>
+                    </Link>
                   </TableCell>
                   {data.questions.map((question) => {
                     const cell = row.cells[question.id] ?? "not_opened";
+                    const badge = (
+                      <span
+                        className={`rounded-md px-2 py-1 text-xs ${
+                          cell === "graded"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : cell === "needs_review"
+                              ? "bg-amber-50 text-amber-700"
+                              : cell === "grading"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {LABELS[cell]}
+                      </span>
+                    );
                     return (
                       <TableCell key={question.id}>
-                        <span
-                          className={`rounded-input px-2 py-1 text-xs ${
-                            cell === "graded"
-                              ? "bg-success/10 text-success"
-                              : cell === "needs_review"
-                                ? "bg-warning/10 text-warning"
-                                : cell === "grading"
-                                  ? "bg-accent/10 text-accent"
-                                  : "bg-muted text-ink-muted"
-                          }`}
-                        >
-                          {LABELS[cell]}
-                        </span>
+                        {cell === "not_opened" ? (
+                          badge
+                        ) : (
+                          <Link
+                            to={reviewHref(row.studentId)}
+                            className="inline-block rounded-md hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {badge}
+                          </Link>
+                        )}
                       </TableCell>
                     );
                   })}

@@ -1,5 +1,6 @@
 import {
   classSchema,
+  type ExerciseStatus,
   exerciseSchema,
   moduleSchema,
   questionSchema,
@@ -33,10 +34,20 @@ export function useTeacherClasses() {
   });
 }
 
-export function useExercises() {
+export function useExercises(filters: { moduleId?: string; status?: ExerciseStatus } = {}) {
   return useQuery({
-    queryKey: exercisesKey,
-    queryFn: () => apiRequest("/teacher/exercises", undefined, z.array(exerciseSchema)),
+    queryKey: [...exercisesKey, filters.moduleId ?? "", filters.status ?? ""],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (filters.moduleId) params.set("moduleId", filters.moduleId);
+      if (filters.status) params.set("status", filters.status);
+      const query = params.toString();
+      return apiRequest(
+        `/teacher/exercises${query ? `?${query}` : ""}`,
+        undefined,
+        z.array(exerciseSchema),
+      );
+    },
   });
 }
 

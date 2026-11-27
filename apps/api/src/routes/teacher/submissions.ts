@@ -19,6 +19,7 @@ teacherSubmissionRoutes.get("/", async (c) =>
     await listTeacherSubmissions({
       exerciseId: c.req.query("exerciseId"),
       questionId: c.req.query("questionId"),
+      studentId: c.req.query("studentId"),
     }),
   ),
 );

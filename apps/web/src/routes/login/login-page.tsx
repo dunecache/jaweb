@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 
+import { PasswordInput } from "@/components/app/password-input";
 import { useToast } from "@/components/app/toaster";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, apiRequest } from "@/lib/api";
 import { meQueryKey } from "@/lib/auth";
+import { clearAnswerDrafts } from "@/lib/drafts";
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
@@ -22,6 +24,11 @@ export function LoginPage() {
     mutationFn: (input: LoginRequest) =>
       apiRequest("/auth/login", { method: "POST", body: JSON.stringify(input) }, authUserSchema),
     onSuccess: (user) => {
+      // Clear before seeding the new identity: the previous user's cached
+      // data must never be rendered for the user who just signed in.
+      queryClient.clear();
+      // Covers the session-expiry path, which redirects without calling logout.
+      clearAnswerDrafts();
       queryClient.setQueryData(meQueryKey, user);
       navigate(user.role === "teacher" ? "/teacher" : "/student", { replace: true });
     },
@@ -41,10 +48,10 @@ export function LoginPage() {
         : null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="font-display text-3xl">Jaweb</CardTitle>
+          <CardTitle className="font-serif text-3xl">Jaweb</CardTitle>
           <CardDescription>جاوب — live classroom answers</CardDescription>
         </CardHeader>
         <CardContent>
@@ -63,10 +70,9 @@ export function LoginPage() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -74,7 +80,7 @@ export function LoginPage() {
               />
             </div>
             {message ? (
-              <p className="text-sm text-danger" role="alert">
+              <p className="text-sm text-destructive" role="alert">
                 {message}
               </p>
             ) : null}

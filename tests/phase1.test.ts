@@ -208,7 +208,14 @@ describe("role matrix", () => {
   function cases(): Array<{ method: string; path: string; body?: unknown; teacherStatus: number }> {
     return [
       { method: "GET", path: "/api/teacher/classes", teacherStatus: 200 },
+      { method: "GET", path: "/api/teacher/classes?archived=1", teacherStatus: 200 },
       { method: "POST", path: "/api/teacher/classes", body: { name: "3AS-2" }, teacherStatus: 201 },
+      {
+        method: "POST",
+        path: "/api/teacher/classes/reorder",
+        body: { ids: [] },
+        teacherStatus: 422,
+      },
       {
         method: "PATCH",
         path: "class-id",
@@ -283,9 +290,60 @@ describe("classes and students", () => {
     const activeClasses = (await classesResponse.json()) as Array<{ name: string }>;
     expect(activeClasses.map((item) => item.name)).not.toContain("ToArchive");
 
+    const withArchived = await request("/api/teacher/classes?archived=1", {}, teacherToken);
+    const allClasses = (await withArchived.json()) as Array<{ name: string }>;
+    expect(allClasses.map((item) => item.name)).toContain("ToArchive");
+
     const roster = await request(`/api/teacher/students?classId=${classId}`, {}, teacherToken);
     const students = (await roster.json()) as Array<{ username: string }>;
     expect(students.map((item) => item.username)).toContain("student2");
+  });
+
+  it("enforces unique names, positive positions, and a complete reorder", async () => {
+    const active = await request("/api/teacher/classes", {}, teacherToken);
+    const activeRows = (await active.json()) as Array<{ id: string; name: string }>;
+    const existing = activeRows[0];
+    if (!existing) throw new Error("missing active class");
+
+    const headers = { "content-type": "application/json" };
+    const duplicate = await request(
+      "/api/teacher/classes",
+      { method: "POST", headers, body: JSON.stringify({ name: existing.name.toUpperCase() }) },
+      teacherToken,
+    );
+    expect(duplicate.status).toBe(409);
+
+    const badPosition = await request(
+      "/api/teacher/classes",
+      { method: "POST", headers, body: JSON.stringify({ name: "ZeroPos", position: 0 }) },
+      teacherToken,
+    );
+    expect(badPosition.status).toBe(422);
+
+    const badArchive = await request(
+      `/api/teacher/classes/${existing.id}`,
+      { method: "PATCH", headers, body: JSON.stringify({ archived: false }) },
+      teacherToken,
+    );
+    expect(badArchive.status).toBe(422);
+
+    const ids = activeRows.map((row) => row.id).reverse();
+    const reordered = await request(
+      "/api/teacher/classes/reorder",
+      { method: "POST", headers, body: JSON.stringify({ ids }) },
+      teacherToken,
+    );
+    expect(reordered.status).toBe(200);
+    const rows = (await reordered.json()) as Array<{ id: string; position: number }>;
+    expect(rows.map((row) => row.id)).toEqual(ids);
+    expect(rows.map((row) => row.position)).toEqual(ids.map((_id, index) => index + 1));
+
+    const stale = await request(
+      "/api/teacher/classes/reorder",
+      { method: "POST", headers, body: JSON.stringify({ ids: [existing.id] }) },
+      teacherToken,
+    );
+    expect(stale.status).toBe(409);
   });
 
   it("prevents archived users from logging in", async () => {
