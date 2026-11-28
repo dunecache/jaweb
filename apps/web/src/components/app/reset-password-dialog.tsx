@@ -1,3 +1,4 @@
+import { patchStudentRequestSchema } from "@jaweb/shared";
 import { useId, useState } from "react";
 
 import { PasswordInput } from "@/components/app/password-input";
@@ -11,11 +12,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { fieldErrors } from "@/lib/form-validation";
 
 export function ResetPasswordDialog({ onReset }: { onReset: (password: string) => void }) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | undefined>();
   const id = useId();
+
+  function change(value: string) {
+    setPassword(value);
+    setError(fieldErrors(patchStudentRequestSchema, { password: value }).password);
+  }
 
   return (
     <>
@@ -26,7 +34,10 @@ export function ResetPasswordDialog({ onReset }: { onReset: (password: string) =
         open={open}
         onOpenChange={(next) => {
           setOpen(next);
-          if (!next) setPassword("");
+          if (!next) {
+            setPassword("");
+            setError(undefined);
+          }
         }}
       >
         <DialogContent>
@@ -40,20 +51,29 @@ export function ResetPasswordDialog({ onReset }: { onReset: (password: string) =
             <Label htmlFor={id}>New password</Label>
             <PasswordInput
               id={id}
-              minLength={8}
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => change(event.target.value)}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? `${id}-error` : undefined}
             />
+            {error ? (
+              <p id={`${id}-error`} className="text-xs text-destructive" role="alert">
+                {error}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">At least 8 characters</p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button
-              disabled={password.length < 8}
+              disabled={Boolean(error) || password.length === 0}
               onClick={() => {
                 onReset(password);
                 setPassword("");
+                setError(undefined);
                 setOpen(false);
               }}
             >
