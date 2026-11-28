@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -332,6 +332,14 @@ describe("student history", () => {
       .get();
     if (!examQuestion) throw new Error("Exam question fixture missing");
     const submissionId = newId();
+    // The fixture already holds a submission for this (question, student);
+    // archive it so the unique active index accepts the graded replacement.
+    await db
+      .update(submissions)
+      .set({ archivedAt: nowIso() })
+      .where(
+        and(eq(submissions.questionId, examQuestion.id), eq(submissions.studentId, studentId)),
+      );
     await db.insert(submissions).values({
       id: submissionId,
       exerciseId: liveExamId,
@@ -369,6 +377,12 @@ describe("student history", () => {
       ).toBe(true);
     } finally {
       await db.delete(submissions).where(eq(submissions.id, submissionId));
+      await db
+        .update(submissions)
+        .set({ archivedAt: null })
+        .where(
+          and(eq(submissions.questionId, examQuestion.id), eq(submissions.studentId, studentId)),
+        );
     }
   });
 

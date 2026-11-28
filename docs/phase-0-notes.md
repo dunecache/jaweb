@@ -8,6 +8,12 @@ shadcn/ui companion utilities it implies:
 - `hono`, `@hono/node-server` — the pinned API layer and Node adapter.
 - `zod` — the pinned validation layer; lives in `@jaweb/shared`.
 - `@libsql/client`, `drizzle-orm`, `drizzle-kit` — the pinned DB/ORM toolchain.
+- `sql.js` (+ `@types/sql.js` dev-only) — pure-WASM SQLite backing the local
+  `file:` client on Android/Termux, where `@libsql/client` has no native binding.
+  Production `libsql://` URLs still use the pinned native client.
+- `hash-wasm` — Argon2id fallback for local dev on Android/Termux, where the
+  `@node-rs/argon2` native binary exits with SIGILL. Same OWASP params and PHC
+  format; production keeps the pinned native binding.
 - `pino` — the pinned structured logger.
 - `react`, `react-dom`, `react-router`, `@tanstack/react-query` — the pinned SPA stack.
 - `tailwindcss`, `@tailwindcss/vite` — the pinned styling toolchain.
@@ -35,10 +41,11 @@ generate the users/sessions migration from the schema it owns.
 
 ## Local sandbox limitations (CI is the referee)
 
-- `@libsql/client` has no native binding for Android/Termux, so `tests/health.test.ts`
-  cannot execute in this sandbox. The route logic was verified locally with a temporary
-  mocked-DB test (7 assertions passed across health + contracts), then that shim was
-  removed. CI runs the real in-memory libSQL test on Linux.
+- `@libsql/client` has no native binding for Android/Termux. Local `file:` URLs now use
+  the `sql.js`-backed adapter in `apps/api/src/db/local-client.ts`, so migrations,
+  drizzle queries, and file persistence run in this sandbox. CI keeps the real native
+  libSQL path on Linux. The same is true for password hashing: `@node-rs/argon2`
+  SIGILLs here, so Android uses hash-wasm's Argon2id with identical parameters.
 - esbuild's bundled Android binary fails under the sandbox's global `LD_PRELOAD`;
   drizzle-kit's baseline migration was generated with `env -u LD_PRELOAD` and
   `ESBUILD_BINARY_PATH` pointing at the matching platform binary. CI needs no workaround.
@@ -46,8 +53,9 @@ generate the users/sessions migration from the schema it owns.
   (which contain pipes inside code spans) are never mangled by `pnpm format`.
 - The Vite dev proxy covers `/api` only. The `/fonts` proxy listed in AGENTS §4 is not
   needed because fonts are bundled locally by `@fontsource` (§11: no external font CDN).
-- `pnpm dev` cannot boot the API in this sandbox for the same libSQL native-binding
-  reason; on a Linux host it runs API :8787 + Vite :5173 as documented.
+- `pnpm dev` boots the API in this sandbox with the WASM adapters; on a Linux host it
+  uses the native bindings. If Vite is restarted after dependency changes, clear
+  `apps/web/node_modules/.vite` to avoid a stale prebundle (duplicate React error).
 
 ## Outstanding human checks
 
